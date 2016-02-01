@@ -1,3 +1,5 @@
+### Rustypop
+
 This is a not-yet-functional port of lalr-parser.y, from the Rust
 repository, into LALRPOP. As of the moment, I am still in the process
 of working my way through shift-reduce failures.
@@ -26,3 +28,6 @@ The easiest way to experiment right now is to build `lalrpop-exe` from
 the LALRPOP project, and then to run `lalrpop-exe -f
 parser-lalr.lalrpop`.
 
+### Licensing
+
+Licensed under the same terms as Rust itself: dual MIT and Apache2.
