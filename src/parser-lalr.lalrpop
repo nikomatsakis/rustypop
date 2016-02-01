@@ -56,9 +56,9 @@ item_const: () = {
   CONST ident ":" ty "=" expr ";" => (),
 };
 item_macro: () = {
-  path_expr "!" ident? parens_delimited_token_trees ";" => (),
-  path_expr "!" ident? braces_delimited_token_trees => (),
-  path_expr "!" ident? brackets_delimited_token_trees ";" => (),
+  PathExpr "!" ident? parens_delimited_token_trees ";" => (),
+  PathExpr "!" ident? braces_delimited_token_trees => (),
+  PathExpr "!" ident? brackets_delimited_token_trees ";" => (),
 };
 view_item: () = {
   use_item => (),
@@ -468,10 +468,10 @@ pat: () = {
   "[" pat_vec "]" => (),
   lit_or_path => (),
   lit_or_path DOTDOTDOT lit_or_path => (),
-  path_expr "{" pat_struct "}" => (),
-  path_expr "(" DOTDOT ")" => (),
-  path_expr "(" pat_tup ")" => (),
-  path_expr "!" ident? delimited_token_trees => (),
+  PathExpr "{" pat_struct "}" => (),
+  PathExpr "(" DOTDOT ")" => (),
+  PathExpr "(" pat_tup ")" => (),
+  PathExpr "!" ident? delimited_token_trees => (),
   binding_mode ident => (),
   ident "@" pat => (),
   binding_mode ident "@" pat => (),
@@ -489,7 +489,7 @@ binding_mode: () = {
   MUT => (),
 };
 lit_or_path: () = {
-  path_expr => (),
+  PathExpr => (),
   lit => (),
   "-" lit => (),
 };
@@ -560,7 +560,6 @@ ty_prim: () = {
   TYPEOF "(" expr ")" => (),
   UNDERSCORE => (),
   ty_bare_fn => (),
-  ty_proc => (),
   for_in_type => (),
 };
 ty_bare_fn: () = {
@@ -578,14 +577,10 @@ ty_closure: () = {
   UNSAFE OROR maybe_bounds ret_ty => (),
   OROR maybe_bounds ret_ty => (),
 };
-ty_proc: () = {
-  PROC generic_params fn_params maybe_bounds ret_ty => (),
-};
 for_in_type: () = {
   FOR "<" maybe_lifetimes ">" for_in_type_suffix => (),
 };
 for_in_type_suffix: () = {
-  ty_proc => (),
   ty_bare_fn => (),
   trait_ref => (),
   ty_closure => (),
@@ -737,7 +732,7 @@ exprs: () = {
   expr => (),
   exprs "," expr => (),
 };
-path_expr: () = {
+PathExpr: () = {
   path_generic_args_with_colons => (),
   MOD_SEP path_generic_args_with_colons => (),
   SELF MOD_SEP path_generic_args_with_colons => (),
@@ -747,266 +742,175 @@ path_generic_args_with_colons: () = {
   path_generic_args_with_colons MOD_SEP ident => (),
   path_generic_args_with_colons MOD_SEP generic_args => (),
 };
-macro_expr: () = {
-  path_expr "!" ident? parens_delimited_token_trees => (),
-  path_expr "!" ident? brackets_delimited_token_trees => (),
+MacroExpr: () = {
+  PathExpr "!" ident? parens_delimited_token_trees => (),
+  PathExpr "!" ident? brackets_delimited_token_trees => (),
 };
-nonblock_expr: () = {
-  lit => (),
-  path_expr => (),
-  SELF => (),
-  macro_expr => (),
-  path_expr "{" struct_expr_fields "}" => (),
-  nonblock_expr "." path_generic_args_with_colons => (),
-  nonblock_expr "." LIT_INTEGER => (),
-  nonblock_expr "[" maybe_expr "]" => (),
-  nonblock_expr "(" maybe_exprs ")" => (),
-  "[" vec_expr "]" => (),
-  "(" maybe_exprs ")" => (),
-  CONTINUE => (),
-  CONTINUE lifetime => (),
-  RETURN => (),
-  RETURN expr => (),
-  BREAK => (),
-  BREAK lifetime => (),
-  nonblock_expr LARROW expr => (),
-  nonblock_expr "=" expr => (),
-  nonblock_expr SHLEQ expr => (),
-  nonblock_expr SHREQ expr => (),
-  nonblock_expr MINUSEQ expr => (),
-  nonblock_expr ANDEQ expr => (),
-  nonblock_expr OREQ expr => (),
-  nonblock_expr PLUSEQ expr => (),
-  nonblock_expr STAREQ expr => (),
-  nonblock_expr SLASHEQ expr => (),
-  nonblock_expr CARETEQ expr => (),
-  nonblock_expr PERCENTEQ expr => (),
-  nonblock_expr OROR expr => (),
-  nonblock_expr ANDAND expr => (),
-  nonblock_expr EQEQ expr => (),
-  nonblock_expr NE expr => (),
-  nonblock_expr "<" expr => (),
-  nonblock_expr ">" expr => (),
-  nonblock_expr LE expr => (),
-  nonblock_expr GE expr => (),
-  nonblock_expr "|" expr => (),
-  nonblock_expr "^" expr => (),
-  nonblock_expr "&" expr => (),
-  nonblock_expr SHL expr => (),
-  nonblock_expr SHR expr => (),
-  nonblock_expr "+" expr => (),
-  nonblock_expr "-" expr => (),
-  nonblock_expr "*" expr => (),
-  nonblock_expr "/" expr => (),
-  nonblock_expr "%" expr => (),
-  nonblock_expr DOTDOT => (),
-  nonblock_expr DOTDOT expr => (),
-  DOTDOT expr => (),
-  DOTDOT => (),
-  nonblock_expr AS ty => (),
-  BOX nonparen_expr => (),
-  BOX "(" maybe_expr ")" nonblock_expr => (),
-  expr_qualified_path => (),
-  nonblock_prefix_expr => (),
+
+// Old-style names:
+expr: () = Expr<"">;
+expr_nostruct: () = Expr<"nostruct">;
+nonblock_expr: () = Expr<"nonblock">;
+nonparen_expr: () = Expr<"nonparen">;
+
+// New-style names:
+Expression: () = Expr<"">;
+
+// "V" is the Expr "Variant", and is intended to be a list of
+// restrictions, e.g.:
+//
+// - "" -- most general form of expressions
+// - "nonblock"
+// - "nonparen"
+// - "nostruct"
+// - "nonblock,nonparen"
+// - "norange"
+//
+// etc.
+Expr<V>: () = {
+    ExprAssign<V>
 };
-expr: () = {
-  lit => (),
-  path_expr => (),
-  SELF => (),
-  macro_expr => (),
-  path_expr "{" struct_expr_fields "}" => (),
-  expr "." path_generic_args_with_colons => (),
-  expr "." LIT_INTEGER => (),
-  expr "[" maybe_expr "]" => (),
-  expr "(" maybe_exprs ")" => (),
-  "(" maybe_exprs ")" => (),
-  "[" vec_expr "]" => (),
-  CONTINUE => (),
-  CONTINUE ident => (),
-  RETURN => (),
-  RETURN expr => (),
-  BREAK => (),
-  BREAK ident => (),
-  expr LARROW expr => (),
-  expr "=" expr => (),
-  expr SHLEQ expr => (),
-  expr SHREQ expr => (),
-  expr MINUSEQ expr => (),
-  expr ANDEQ expr => (),
-  expr OREQ expr => (),
-  expr PLUSEQ expr => (),
-  expr STAREQ expr => (),
-  expr SLASHEQ expr => (),
-  expr CARETEQ expr => (),
-  expr PERCENTEQ expr => (),
-  expr OROR expr => (),
-  expr ANDAND expr => (),
-  expr EQEQ expr => (),
-  expr NE expr => (),
-  expr "<" expr => (),
-  expr ">" expr => (),
-  expr LE expr => (),
-  expr GE expr => (),
-  expr "|" expr => (),
-  expr "^" expr => (),
-  expr "&" expr => (),
-  expr SHL expr => (),
-  expr SHR expr => (),
-  expr "+" expr => (),
-  expr "-" expr => (),
-  expr "*" expr => (),
-  expr "/" expr => (),
-  expr "%" expr => (),
-  expr DOTDOT => (),
-  expr DOTDOT expr => (),
-  DOTDOT expr => (),
-  DOTDOT => (),
-  expr AS ty => (),
-  BOX nonparen_expr => (),
-  BOX "(" maybe_expr ")" expr => (),
-  expr_qualified_path => (),
-  block_expr => (),
-  block => (),
-  nonblock_prefix_expr => (),
+
+ExprAssign<V>: () = {
+    ExprEmplace<V> => (),
+    ExprEmplace<V> "=" ExprAssign<V> => (),
+    ExprEmplace<V> SHLEQ ExprAssign<V> => (),
+    ExprEmplace<V> SHREQ ExprAssign<V> => (),
+    ExprEmplace<V> MINUSEQ ExprAssign<V> => (),
+    ExprEmplace<V> ANDEQ ExprAssign<V> => (),
+    ExprEmplace<V> OREQ ExprAssign<V> => (),
+    ExprEmplace<V> PLUSEQ ExprAssign<V> => (),
+    ExprEmplace<V> STAREQ ExprAssign<V> => (),
+    ExprEmplace<V> SLASHEQ ExprAssign<V> => (),
+    ExprEmplace<V> CARETEQ ExprAssign<V> => (),
+    ExprEmplace<V> PERCENTEQ ExprAssign<V> => (),
 };
-nonparen_expr: () = {
-  lit => (),
-  path_expr => (),
-  SELF => (),
-  macro_expr => (),
-  path_expr "{" struct_expr_fields "}" => (),
-  nonparen_expr "." path_generic_args_with_colons => (),
-  nonparen_expr "." LIT_INTEGER => (),
-  nonparen_expr "[" maybe_expr "]" => (),
-  nonparen_expr "(" maybe_exprs ")" => (),
-  "[" vec_expr "]" => (),
-  CONTINUE => (),
-  CONTINUE ident => (),
-  RETURN => (),
-  RETURN expr => (),
-  BREAK => (),
-  BREAK ident => (),
-  nonparen_expr LARROW nonparen_expr => (),
-  nonparen_expr "=" nonparen_expr => (),
-  nonparen_expr SHLEQ nonparen_expr => (),
-  nonparen_expr SHREQ nonparen_expr => (),
-  nonparen_expr MINUSEQ nonparen_expr => (),
-  nonparen_expr ANDEQ nonparen_expr => (),
-  nonparen_expr OREQ nonparen_expr => (),
-  nonparen_expr PLUSEQ nonparen_expr => (),
-  nonparen_expr STAREQ nonparen_expr => (),
-  nonparen_expr SLASHEQ nonparen_expr => (),
-  nonparen_expr CARETEQ nonparen_expr => (),
-  nonparen_expr PERCENTEQ nonparen_expr => (),
-  nonparen_expr OROR nonparen_expr => (),
-  nonparen_expr ANDAND nonparen_expr => (),
-  nonparen_expr EQEQ nonparen_expr => (),
-  nonparen_expr NE nonparen_expr => (),
-  nonparen_expr "<" nonparen_expr => (),
-  nonparen_expr ">" nonparen_expr => (),
-  nonparen_expr LE nonparen_expr => (),
-  nonparen_expr GE nonparen_expr => (),
-  nonparen_expr "|" nonparen_expr => (),
-  nonparen_expr "^" nonparen_expr => (),
-  nonparen_expr "&" nonparen_expr => (),
-  nonparen_expr SHL nonparen_expr => (),
-  nonparen_expr SHR nonparen_expr => (),
-  nonparen_expr "+" nonparen_expr => (),
-  nonparen_expr "-" nonparen_expr => (),
-  nonparen_expr "*" nonparen_expr => (),
-  nonparen_expr "/" nonparen_expr => (),
-  nonparen_expr "%" nonparen_expr => (),
-  nonparen_expr DOTDOT => (),
-  nonparen_expr DOTDOT nonparen_expr => (),
-  DOTDOT nonparen_expr => (),
-  DOTDOT => (),
-  nonparen_expr AS ty => (),
-  BOX nonparen_expr => (),
-  BOX "(" maybe_expr ")" expr => (),
-  expr_qualified_path => (),
-  block_expr => (),
-  block => (),
-  nonblock_prefix_expr => (),
+
+ExprEmplace<V>: () = {
+    ExprJustRange<V>,
+    ExprJustRange<V> LARROW ExprEmplace<V> => (),
 };
-expr_nostruct: () = {
-  lit => (),
-  path_expr => (),
-  SELF => (),
-  macro_expr => (),
-  expr_nostruct "." path_generic_args_with_colons => (),
-  expr_nostruct "." LIT_INTEGER => (),
-  expr_nostruct "[" maybe_expr "]" => (),
-  expr_nostruct "(" maybe_exprs ")" => (),
-  "[" vec_expr "]" => (),
-  "(" maybe_exprs ")" => (),
-  CONTINUE => (),
-  CONTINUE ident => (),
-  RETURN => (),
-  RETURN expr => (),
-  BREAK => (),
-  BREAK ident => (),
-  expr_nostruct LARROW expr_nostruct => (),
-  expr_nostruct "=" expr_nostruct => (),
-  expr_nostruct SHLEQ expr_nostruct => (),
-  expr_nostruct SHREQ expr_nostruct => (),
-  expr_nostruct MINUSEQ expr_nostruct => (),
-  expr_nostruct ANDEQ expr_nostruct => (),
-  expr_nostruct OREQ expr_nostruct => (),
-  expr_nostruct PLUSEQ expr_nostruct => (),
-  expr_nostruct STAREQ expr_nostruct => (),
-  expr_nostruct SLASHEQ expr_nostruct => (),
-  expr_nostruct CARETEQ expr_nostruct => (),
-  expr_nostruct PERCENTEQ expr_nostruct => (),
-  expr_nostruct OROR expr_nostruct => (),
-  expr_nostruct ANDAND expr_nostruct => (),
-  expr_nostruct EQEQ expr_nostruct => (),
-  expr_nostruct NE expr_nostruct => (),
-  expr_nostruct "<" expr_nostruct => (),
-  expr_nostruct ">" expr_nostruct => (),
-  expr_nostruct LE expr_nostruct => (),
-  expr_nostruct GE expr_nostruct => (),
-  expr_nostruct "|" expr_nostruct => (),
-  expr_nostruct "^" expr_nostruct => (),
-  expr_nostruct "&" expr_nostruct => (),
-  expr_nostruct SHL expr_nostruct => (),
-  expr_nostruct SHR expr_nostruct => (),
-  expr_nostruct "+" expr_nostruct => (),
-  expr_nostruct "-" expr_nostruct => (),
-  expr_nostruct "*" expr_nostruct => (),
-  expr_nostruct "/" expr_nostruct => (),
-  expr_nostruct "%" expr_nostruct => (),
-  expr_nostruct DOTDOT => (),
-  expr_nostruct DOTDOT expr_nostruct => (),
-  DOTDOT expr_nostruct => (),
-  DOTDOT => (),
-  expr_nostruct AS ty => (),
-  BOX nonparen_expr => (),
-  BOX "(" maybe_expr ")" expr_nostruct => (),
-  expr_qualified_path => (),
-  block_expr => (),
-  block => (),
-  nonblock_prefix_expr_nostruct => (),
+
+ExprJustRange<V>: () = {
+    ExprPostRange<V>,
+    DOTDOT => (),
 };
-nonblock_prefix_expr_nostruct: () = {
-  "-" expr_nostruct => (),
-  "!" expr_nostruct => (),
-  "*" expr_nostruct => (),
-  "&" maybe_mut expr_nostruct => (),
-  ANDAND maybe_mut expr_nostruct => (),
-  lambda_expr_nostruct => (),
-  MOVE lambda_expr_nostruct => (),
-  proc_expr_nostruct => (),
+
+// Placeholder for whatever has higher precedence than `..` by itself.
+ExprPostRange<V>: () = {
+    ExprOrOr<V>
 };
-nonblock_prefix_expr: () = {
-  "-" expr => (),
-  "!" expr => (),
-  "*" expr => (),
-  "&" maybe_mut expr => (),
-  ANDAND maybe_mut expr => (),
-  lambda_expr => (),
-  MOVE lambda_expr => (),
-  proc_expr => (),
+
+ExprOrOr<V>: () = {
+    ExprAndAnd<V>,
+    ExprOrOr<V> OROR ExprAndAnd<V> => (),
 };
+
+ExprAndAnd<V>: () = {
+    ExprEq<V>,
+    ExprAndAnd<V> ANDAND ExprEq<V> => (),
+};
+
+ExprEq<V>: () = {
+    ExprComparison<V>,
+    ExprEq<V> EQEQ ExprComparison<V> => (),
+    ExprEq<V> NE ExprComparison<V> => (),
+};
+
+ExprComparison<V>: () = {
+    ExprOr<V>,
+    ExprComparison<V> "<" ExprOr<V> => (),
+    ExprComparison<V> ">" ExprOr<V> => (),
+    ExprComparison<V> LE ExprOr<V> => (),
+    ExprComparison<V> GE ExprOr<V> => (),
+};
+
+ExprOr<V>: () = {
+    ExprXor<V>,
+    ExprOr<V> "|" ExprXor<V> => (),
+};
+
+ExprXor<V>: () = {
+    ExprAnd<V>,
+    ExprXor<V> "^" ExprAnd<V> => (),
+};
+
+ExprAnd<V>: () = {
+    ExprShift<V>,
+    ExprAnd<V> "&" ExprShift<V> => (),
+};
+
+ExprShift<V>: () = {
+    ExprPlusMinus<V>,
+    ExprShift<V> SHL ExprPlusMinus<V> => (),
+    ExprShift<V> SHR ExprPlusMinus<V> => (),
+};
+
+ExprPlusMinus<V>: () = {
+    ExprAs<V>,
+    ExprPlusMinus<V> "+" ExprAs<V> => (),
+    ExprPlusMinus<V> "-" ExprAs<V> => (),
+};
+
+ExprAs<V>: () = {
+    ExprMulDiv<V>,
+    ExprAs<V> AS ExprMulDiv<V> => (),
+};
+
+ExprMulDiv<V>: () = {
+    ExprRange<V>,
+    ExprMulDiv<V> "*" ExprRange<V> => (),
+    ExprMulDiv<V> "/" ExprRange<V> => (),
+    ExprMulDiv<V> "%" ExprRange<V> => (),
+};
+
+// FIXE
+ExprRange<V>: () = {
+    ExprSuffix<V>,
+    ExprSuffix<V> DOTDOT => (),
+    ExprSuffix<V> DOTDOT ExprPostRange<V> => (),
+    DOTDOT ExprRange<V> => (),
+};
+
+ExprSuffix<V>: () = {
+    ExprAtom<V>,
+    ExprSuffix<V> "." path_generic_args_with_colons => (),
+    ExprSuffix<V> "." LIT_INTEGER => (),
+    ExprSuffix<V> "[" Expression "]" => (),
+    ExprSuffix<V> "(" Comma<Expression> ")" => (),
+};
+
+ExprPrefix<V>: () = {
+    BOX ExprPrefix<V> => (),
+    "-" ExprPrefix<V> => (),
+    "!" ExprPrefix<V> => (),
+    "*" ExprPrefix<V> => (),
+    "&" maybe_mut ExprPrefix<V> => (),
+};
+
+ExprAtom<V>: () = {
+    lit => (),
+    PathExpr => (),
+    SELF => (),
+    MacroExpr => (),
+    PathExpr "{" struct_expr_fields "}" => (),
+    "(" Comma<Expression> ")" => (),
+    "[" Comma<Expression> "]" => (),
+    "[" Expression ";" Expression "]" => (),
+    CONTINUE => (),
+    CONTINUE ident => (),
+    RETURN => (),
+    RETURN Expr<V> => (),
+    BREAK => (),
+    BREAK ident => (),
+    expr_qualified_path => (),
+    block_expr => (),
+    block => (),
+    ANDAND maybe_mut Expr<V> => (),
+    LambdaExpr<V> => (),
+    MOVE LambdaExpr<V> => (),
+};
+
 expr_qualified_path: () = {
   "<" ty_sum maybe_as_trait_ref ">" MOD_SEP ident maybe_qpath_params => (),
   SHL ty_sum maybe_as_trait_ref ">" MOD_SEP ident maybe_as_trait_ref ">" MOD_SEP ident => (),
@@ -1022,31 +926,12 @@ maybe_as_trait_ref: () = {
   AS trait_ref => (),
   () => (),
 };
-lambda_expr: () = {
-  OROR ret_ty expr => (),
-  "|" maybe_unboxed_closure_kind "|" ret_ty expr => (),
-  "|" inferrable_params "|" ret_ty expr => (),
-  "|" "&" maybe_mut ":" inferrable_params "|" ret_ty expr => (),
-  "|" ":" inferrable_params "|" ret_ty expr => (),
-};
-lambda_expr_nostruct: () = {
-  OROR expr_nostruct => (),
-  "|" maybe_unboxed_closure_kind "|" expr_nostruct => (),
-  "|" inferrable_params "|" expr_nostruct => (),
-  "|" "&" maybe_mut ":" inferrable_params "|" expr_nostruct => (),
-  "|" ":" inferrable_params "|" expr_nostruct => (),
-};
-proc_expr: () = {
-  PROC "(" ")" expr => (),
-  PROC "(" inferrable_params ")" expr => (),
-};
-proc_expr_nostruct: () = {
-  PROC "(" ")" expr_nostruct => (),
-  PROC "(" inferrable_params ")" expr_nostruct => (),
-};
-vec_expr: () = {
-  maybe_exprs => (),
-  exprs ";" expr => (),
+LambdaExpr<V>: () = {
+  OROR ret_ty Expr<V> => (),
+  "|" maybe_unboxed_closure_kind "|" ret_ty Expr<V> => (),
+  "|" inferrable_params "|" ret_ty Expr<V> => (),
+  "|" "&" maybe_mut ":" inferrable_params "|" ret_ty Expr<V> => (),
+  "|" ":" inferrable_params "|" ret_ty Expr<V> => (),
 };
 struct_expr_fields: () = {
   field_inits => (),
@@ -1077,7 +962,7 @@ block_expr: () = {
   expr_loop => (),
   expr_for => (),
   UNSAFE block => (),
-  path_expr "!" ident? braces_delimited_token_trees => (),
+  PathExpr "!" ident? braces_delimited_token_trees => (),
 };
 full_block_expr: () = {
   block_expr => (),
@@ -1230,7 +1115,6 @@ unpaired_token: () = {
   USE => (),
   WHILE => (),
   CONTINUE => (),
-  PROC => (),
   BOX => (),
   CONST => (),
   WHERE => (),
@@ -1391,7 +1275,6 @@ extern {
     USE => Token91,
     WHILE => Token92,
     CONTINUE => Token93,
-    PROC => Token94,
     BOX => Token95,
     CONST => Token96,
     WHERE => Token97,
