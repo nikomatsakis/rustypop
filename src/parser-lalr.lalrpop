@@ -455,7 +455,7 @@ maybe_bindings: () = {
 };
 
 #[inline]
-Pat: () = PatWithBindingMode<binding_mode>;
+Pat: () = PatWithBindingMode<BindingMode>;
 
 PatWithBindingMode<BM>: () = {
     UNDERSCORE => (),
@@ -482,7 +482,7 @@ pats_or: () = {
   Pat => (),
   pats_or "|1" Pat => (),
 };
-binding_mode: () = {
+BindingMode: () = {
     RefBindingMode,
     MUT => (),
 };
@@ -497,11 +497,11 @@ lit_or_path: () = {
 };
 PatField: () = {
   ident => (),
-  binding_mode ident => (),
+  BindingMode ident => (),
   BOX ident => (),
-  BOX binding_mode ident => (),
+  BOX BindingMode ident => (),
   ident ":" Pat => (),
-  binding_mode ident ":" Pat => (),
+  BindingMode ident ":" Pat => (),
 };
 PatFields: () = {
   PatField => (),
