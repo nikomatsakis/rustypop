@@ -979,11 +979,11 @@ match_clause: () = {
   block_match_clause "," => (),
 };
 nonblock_match_clause: () = {
-  maybe_outer_attrs pats_or maybe_guard FAT_ARROW nonblock_expr => (),
-  maybe_outer_attrs pats_or maybe_guard FAT_ARROW full_block_expr => (),
+  maybe_outer_attrs pats_or maybe_guard "->" nonblock_expr => (),
+  maybe_outer_attrs pats_or maybe_guard "->" full_block_expr => (),
 };
 block_match_clause: () = {
-  maybe_outer_attrs pats_or maybe_guard FAT_ARROW block => (),
+  maybe_outer_attrs pats_or maybe_guard "->" block => (),
 };
 maybe_guard: () = {
   IF expr_nostruct => (),
@@ -1063,7 +1063,7 @@ unpaired_token: () = {
   DOTDOTDOT => (),
   MOD_SEP => (),
   RARROW => (),
-  FAT_ARROW => (),
+  "->" => (),
   LIT_BYTE => (),
   LIT_CHAR => (),
   LIT_INTEGER => (),
@@ -1223,7 +1223,7 @@ extern {
         MOD_SEP => Token47,
         RARROW => Token48,
         LARROW => Token49,
-        FAT_ARROW => Token50,
+        "->" => Token50,
         LIT_BYTE => Token51,
         LIT_CHAR => Token52,
         LIT_INTEGER => Token53,
