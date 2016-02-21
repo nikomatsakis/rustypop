@@ -462,7 +462,6 @@ PatWithBindingMode<BM>: () = {
     "&" PatWithBindingMode<RefBindingMode> => (),
     "&" MUT Pat => (),
     ANDAND Pat => (),
-    "(" ")" => (),
     "(" Comma<Pat> ")" => (),
     "[" PatVec "]" => (),
     lit_or_path => (),
