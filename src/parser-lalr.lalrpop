@@ -323,10 +323,6 @@ params: () = {
 param: () = {
   pat ":" ty_sum => (),
 };
-inferrable_params: () = {
-  inferrable_param => (),
-  inferrable_params "," inferrable_param => (),
-};
 inferrable_param: () = {
   pat maybe_ty_ascription => (),
 };
@@ -481,7 +477,7 @@ pat: () = {
 };
 pats_or: () = {
   pat => (),
-  pats_or "|" pat => (),
+  pats_or "|1" pat => (),
 };
 binding_mode: () = {
   REF => (),
@@ -821,7 +817,7 @@ ExprComparison<V>: () = {
 
 ExprOr<V>: () = {
     ExprXor<V>,
-    ExprOr<V> "|" ExprXor<V> => (),
+    ExprOr<V> "|1" ExprXor<V> => (),
 };
 
 ExprXor<V>: () = {
@@ -919,11 +915,8 @@ maybe_as_trait_ref: () = {
   () => (),
 };
 LambdaExpr<V>: () = {
-  OROR ret_ty Expr<V> => (),
-  "|" maybe_unboxed_closure_kind "|" ret_ty Expr<V> => (),
-  "|" inferrable_params "|" ret_ty Expr<V> => (),
-  "|" "&" maybe_mut ":" inferrable_params "|" ret_ty Expr<V> => (),
-  "|" ":" inferrable_params "|" ret_ty Expr<V> => (),
+    AnyPipe Comma<inferrable_param>? "|1" Expr<V> => (),
+    AnyPipe Comma<inferrable_param>? "|1" "->" ty "{" Expr<V> "}" => (),
 };
 struct_expr_fields: () = {
   field_inits => (),
@@ -1047,7 +1040,6 @@ unpaired_token: () = {
   NE => (),
   GE => (),
   ANDAND => (),
-  OROR => (),
   LARROW => (),
   SHLEQ => (),
   SHREQ => (),
@@ -1130,7 +1122,8 @@ unpaired_token: () = {
   ">" => (),
   "-" => (),
   "&" => (),
-  "|" => (),
+  "|+" => (),
+  "|1" => (),
   "+" => (),
   "*" => (),
   "/" => (),
@@ -1165,11 +1158,23 @@ maybe_ident: () = {
   ident => (),
 };
 
+#[inline]
 Comma<E>: () =
     Delim<E,",">;
 
+#[inline]
 Delim<E,D>: () =
     <v0:(<E> D)*> <e1:E?> => ();
+
+#[inline]
+OROR: () =
+    "|+" "|1";
+
+#[inline]
+AnyPipe: () = {
+    "|+" => (),
+    "|1" => (),
+};
 
 extern {
     enum &'input str {
@@ -1197,7 +1202,8 @@ extern {
         "]" => Token21,
         "^" => Token22,
         "{" => Token23,
-        "|" => Token24,
+        "|+" => Token24a,  // "|" followed immediately by another "|"
+        "|1" => Token24b,  // "|" followed by non-pipe
         "}" => Token25,
         "~" => Token26,
         SHL => Token27,
@@ -1207,7 +1213,6 @@ extern {
         NE => Token31,
         GE => Token32,
         ANDAND => Token33,
-        OROR => Token34,
         SHLEQ => Token35,
         SHREQ => Token36,
         MINUSEQ => Token37,
