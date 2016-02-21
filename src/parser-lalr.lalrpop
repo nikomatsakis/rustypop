@@ -321,10 +321,10 @@ params: () = {
   params "," param => (),
 };
 param: () = {
-  pat ":" ty_sum => (),
+  Pat ":" ty_sum => (),
 };
 inferrable_param: () = {
-  pat maybe_ty_ascription => (),
+  Pat maybe_ty_ascription => (),
 };
 maybe_unboxed_closure_kind: () = {
   () => (),
@@ -453,31 +453,31 @@ maybe_bindings: () = {
   "," bindings => (),
   () => (),
 };
-pat: () = {
+Pat: () = {
   UNDERSCORE => (),
-  "&" pat => (),
-  "&" MUT pat => (),
-  ANDAND pat => (),
+  "&" Pat => (),
+  "&" MUT Pat => (),
+  ANDAND Pat => (),
   "(" ")" => (),
-  "(" pat_tup ")" => (),
-  "(" pat_tup "," ")" => (),
-  "[" pat_vec "]" => (),
+  "(" PatTup ")" => (),
+  "(" PatTup "," ")" => (),
+  "[" PatVec "]" => (),
   lit_or_path => (),
   lit_or_path DOTDOTDOT lit_or_path => (),
-  PathExpr "{" pat_struct "}" => (),
+  PathExpr "{" PatStruct "}" => (),
   PathExpr "(" DOTDOT ")" => (),
-  PathExpr "(" pat_tup ")" => (),
+  PathExpr "(" PatTup ")" => (),
   PathExpr "!" ident? delimited_token_trees => (),
   binding_mode ident => (),
-  ident "@" pat => (),
-  binding_mode ident "@" pat => (),
-  BOX pat => (),
+  ident "@" Pat => (),
+  binding_mode ident "@" Pat => (),
+  BOX Pat => (),
   "<" ty_sum maybe_as_trait_ref ">" MOD_SEP ident => (),
   SHL ty_sum maybe_as_trait_ref ">" MOD_SEP ident maybe_as_trait_ref ">" MOD_SEP ident => (),
 };
 pats_or: () = {
-  pat => (),
-  pats_or "|1" pat => (),
+  Pat => (),
+  pats_or "|1" Pat => (),
 };
 binding_mode: () = {
   REF => (),
@@ -489,45 +489,45 @@ lit_or_path: () = {
   lit => (),
   "-" lit => (),
 };
-pat_field: () = {
+PatField: () = {
   ident => (),
   binding_mode ident => (),
   BOX ident => (),
   BOX binding_mode ident => (),
-  ident ":" pat => (),
-  binding_mode ident ":" pat => (),
+  ident ":" Pat => (),
+  binding_mode ident ":" Pat => (),
 };
-pat_fields: () = {
-  pat_field => (),
-  pat_fields "," pat_field => (),
+PatFields: () = {
+  PatField => (),
+  PatFields "," PatField => (),
 };
-pat_struct: () = {
-  pat_fields => (),
-  pat_fields "," => (),
-  pat_fields "," DOTDOT => (),
+PatStruct: () = {
+  PatFields => (),
+  PatFields "," => (),
+  PatFields "," DOTDOT => (),
   DOTDOT => (),
 };
-pat_tup: () = {
-  pat => (),
-  pat_tup "," pat => (),
+PatTup: () = {
+  Pat => (),
+  PatTup "," Pat => (),
 };
-pat_vec: () = {
-  pat_vec_elts => (),
-  pat_vec_elts "," => (),
-  pat_vec_elts DOTDOT => (),
-  pat_vec_elts "," DOTDOT => (),
-  pat_vec_elts DOTDOT "," pat_vec_elts => (),
-  pat_vec_elts DOTDOT "," pat_vec_elts "," => (),
-  pat_vec_elts "," DOTDOT "," pat_vec_elts => (),
-  pat_vec_elts "," DOTDOT "," pat_vec_elts "," => (),
-  DOTDOT "," pat_vec_elts => (),
-  DOTDOT "," pat_vec_elts "," => (),
+PatVec: () = {
+  PatVec_elts => (),
+  PatVec_elts "," => (),
+  PatVec_elts DOTDOT => (),
+  PatVec_elts "," DOTDOT => (),
+  PatVec_elts DOTDOT "," PatVec_elts => (),
+  PatVec_elts DOTDOT "," PatVec_elts "," => (),
+  PatVec_elts "," DOTDOT "," PatVec_elts => (),
+  PatVec_elts "," DOTDOT "," PatVec_elts "," => (),
+  DOTDOT "," PatVec_elts => (),
+  DOTDOT "," PatVec_elts "," => (),
   DOTDOT => (),
   () => (),
 };
-pat_vec_elts: () = {
-  pat => (),
-  pat_vec_elts "," pat => (),
+PatVec_elts: () = {
+  Pat => (),
+  PatVec_elts "," Pat => (),
 };
 ty: () = {
   ty_prim => (),
@@ -987,8 +987,8 @@ expr_if: () = {
   IF expr_nostruct block ELSE block_or_if => (),
 };
 expr_if_let: () = {
-  IF LET pat "=" expr_nostruct block => (),
-  IF LET pat "=" expr_nostruct block ELSE block_or_if => (),
+  IF LET Pat "=" expr_nostruct block => (),
+  IF LET Pat "=" expr_nostruct block ELSE block_or_if => (),
 };
 block_or_if: () = {
   block => (),
@@ -999,20 +999,20 @@ expr_while: () = {
   maybe_label WHILE expr_nostruct block => (),
 };
 expr_while_let: () = {
-  maybe_label WHILE LET pat "=" expr_nostruct block => (),
+  maybe_label WHILE LET Pat "=" expr_nostruct block => (),
 };
 expr_loop: () = {
   maybe_label LOOP block => (),
 };
 expr_for: () = {
-  maybe_label FOR pat IN expr_nostruct block => (),
+  maybe_label FOR Pat IN expr_nostruct block => (),
 };
 maybe_label: () = {
   lifetime ":" => (),
   () => (),
 };
 let: () = {
-  LET pat maybe_ty_ascription maybe_init_expr ";" => (),
+  LET Pat maybe_ty_ascription maybe_init_expr ";" => (),
 };
 lit: () = {
   LIT_BYTE => (),
