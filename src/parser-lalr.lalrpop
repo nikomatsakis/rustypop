@@ -535,7 +535,6 @@ pat_vec_elts: () = {
 };
 ty: () = {
   ty_prim => (),
-  ty_closure => (),
   "<" ty_sum maybe_as_trait_ref ">" MOD_SEP ident => (),
   SHL ty_sum maybe_as_trait_ref ">" MOD_SEP ident maybe_as_trait_ref ">" MOD_SEP ident => (),
   "(" ty_sums ")" => (),
@@ -571,19 +570,12 @@ ty_bare_fn: () = {
 ty_fn_decl: () = {
   generic_params fn_anon_params ret_ty => (),
 };
-ty_closure: () = {
-  UNSAFE "|" anon_params "|" maybe_bounds ret_ty => (),
-  "|" anon_params "|" maybe_bounds ret_ty => (),
-  UNSAFE OROR maybe_bounds ret_ty => (),
-  OROR maybe_bounds ret_ty => (),
-};
 for_in_type: () = {
   FOR "<" maybe_lifetimes ">" for_in_type_suffix => (),
 };
 for_in_type_suffix: () = {
   ty_bare_fn => (),
   trait_ref => (),
-  ty_closure => (),
 };
 maybe_mut: () = {
   MUT => (),
