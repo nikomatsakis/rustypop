@@ -453,36 +453,42 @@ maybe_bindings: () = {
   "," bindings => (),
   () => (),
 };
-Pat: () = {
-  UNDERSCORE => (),
-  "&" Pat => (),
-  "&" MUT Pat => (),
-  ANDAND Pat => (),
-  "(" ")" => (),
-  "(" PatTup ")" => (),
-  "(" PatTup "," ")" => (),
-  "[" PatVec "]" => (),
-  lit_or_path => (),
-  lit_or_path DOTDOTDOT lit_or_path => (),
-  PathExpr "{" PatStruct "}" => (),
-  PathExpr "(" DOTDOT ")" => (),
-  PathExpr "(" PatTup ")" => (),
-  PathExpr "!" ident? delimited_token_trees => (),
-  binding_mode ident => (),
-  ident "@" Pat => (),
-  binding_mode ident "@" Pat => (),
-  BOX Pat => (),
-  "<" ty_sum maybe_as_trait_ref ">" MOD_SEP ident => (),
-  SHL ty_sum maybe_as_trait_ref ">" MOD_SEP ident maybe_as_trait_ref ">" MOD_SEP ident => (),
+
+#[inline]
+Pat: () = PatWithBindingMode<binding_mode>;
+
+PatWithBindingMode<BM>: () = {
+    UNDERSCORE => (),
+    "&" PatWithBindingMode<RefBindingMode> => (),
+    "&" MUT Pat => (),
+    ANDAND Pat => (),
+    "(" ")" => (),
+    "(" Comma<Pat> ")" => (),
+    "[" PatVec "]" => (),
+    lit_or_path => (),
+    lit_or_path DOTDOTDOT lit_or_path => (),
+    PathExpr "{" PatStruct "}" => (),
+    PathExpr "(" DOTDOT ")" => (),
+    PathExpr "(" Comma<Pat> ")" => (),
+    PathExpr "!" ident? delimited_token_trees => (),
+    BM ident => (),
+    ident "@" Pat => (),
+    BM ident "@" Pat => (),
+    BOX Pat => (),
+    "<" ty_sum maybe_as_trait_ref ">" MOD_SEP ident => (),
+    SHL ty_sum maybe_as_trait_ref ">" MOD_SEP ident maybe_as_trait_ref ">" MOD_SEP ident => (),
 };
 pats_or: () = {
   Pat => (),
   pats_or "|1" Pat => (),
 };
 binding_mode: () = {
-  REF => (),
-  REF MUT => (),
-  MUT => (),
+    RefBindingMode,
+    MUT => (),
+};
+RefBindingMode: () = {
+    REF => (),
+    REF MUT => (),
 };
 lit_or_path: () = {
   PathExpr => (),
@@ -506,10 +512,6 @@ PatStruct: () = {
   PatFields "," => (),
   PatFields "," DOTDOT => (),
   DOTDOT => (),
-};
-PatTup: () = {
-  Pat => (),
-  PatTup "," Pat => (),
 };
 PatVec: () = {
   PatVec_elts => (),
