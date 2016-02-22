@@ -324,14 +324,14 @@ fn_anon_params: () = {
 };
 fn_params_with_self: () = {
   "(" maybe_mut "self" maybe_ty_ascription maybe_comma_params ")" => (),
-  "(" "&" maybe_mut "self" maybe_ty_ascription maybe_comma_params ")" => (),
-  "(" "&" lifetime maybe_mut "self" maybe_ty_ascription maybe_comma_params ")" => (),
+  "(" "&1" maybe_mut "self" maybe_ty_ascription maybe_comma_params ")" => (),
+  "(" "&1" lifetime maybe_mut "self" maybe_ty_ascription maybe_comma_params ")" => (),
   "(" maybe_params ")" => (),
 };
 fn_anon_params_with_self: () = {
   "(" maybe_mut "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
-  "(" "&" maybe_mut "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
-  "(" "&" lifetime maybe_mut "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
+  "(" "&1" maybe_mut "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
+  "(" "&1" lifetime maybe_mut "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
   "(" maybe_anon_params ")" => (),
 };
 maybe_params: () = {
@@ -348,11 +348,6 @@ param: () = {
 };
 inferrable_param: () = {
   Pat maybe_ty_ascription => (),
-};
-maybe_unboxed_closure_kind: () = {
-  () => (),
-  ":" => (),
-  "&" maybe_mut ":" => (),
 };
 maybe_comma_params: () = {
   "," => (),
@@ -387,10 +382,8 @@ anon_params_allow_variadic_tail: () = {
 named_arg: () = {
   ident => (),
   UNDERSCORE => (),
-  "&" ident => (),
-  "&" UNDERSCORE => (),
-  ANDAND ident => (),
-  ANDAND UNDERSCORE => (),
+  "&1" ident => (),
+  "&1" UNDERSCORE => (),
   "mut" ident => (),
 };
 ret_ty: () = {
@@ -482,9 +475,8 @@ Pat: () = PatWithBindingMode<BindingMode>;
 
 PatWithBindingMode<BM>: () = {
     UNDERSCORE => (),
-    "&" PatWithBindingMode<RefBindingMode> => (),
-    "&" "mut" Pat => (),
-    ANDAND Pat => (),
+    AnyAmp PatWithBindingMode<RefBindingMode> => (),
+    AnyAmp "mut" Pat => (),
     "(" Comma<Pat> ")" => (),
     "[" PatVec "]" => (),
     lit_or_path => (),
@@ -562,17 +554,12 @@ ty: () = {
   "(" ")" => (),
 };
 ty_prim: () = {
-  path_generic_args_without_colons => (),
-  "::" path_generic_args_without_colons => (),
-  "self" "::" path_generic_args_without_colons => (),
+  Path<Epsilon> => (),
   "box" ty => (),
   "*" maybe_mut_or_const ty => (),
-  "&" ty => (),
-  "&" "mut" ty => (),
-  ANDAND ty => (),
-  ANDAND "mut" ty => (),
-  "&" lifetime maybe_mut ty => (),
-  ANDAND lifetime maybe_mut ty => (),
+  AnyAmp ty => (),
+  AnyAmp "mut" ty => (),
+  AnyAmp lifetime maybe_mut ty => (),
   "[" ty "]" => (),
   "[" ty "," ".." Expr "]" => (),
   "[" ty ";" Expr "]" => (),
@@ -809,12 +796,12 @@ ExprOptionalRhs<S,B,L>: () = {
 
 ExprOrOr<S,B,L>: () = {
     ExprAndAnd<S,B,L>,
-    ExprOrOr<S,B,L> OROR ExprAndAnd<S,B,L> => (),
+    ExprOrOr<S,B,L> "|+" "|1" ExprAndAnd<S,B,L> => (),
 };
 
 ExprAndAnd<S,B,L>: () = {
     ExprEq<S,B,L>,
-    ExprAndAnd<S,B,L> ANDAND ExprEq<S,B,L> => (),
+    ExprAndAnd<S,B,L> "&+" "&1" ExprEq<S,B,L> => (),
 };
 
 ExprEq<S,B,L>: () = {
@@ -844,7 +831,7 @@ ExprXor<S,B,L,T>: () = {
 
 ExprAnd<S,B,L,T>: () = {
     ExprShift<S,B,L,T>,
-    ExprAnd<S,B,L,"T"> "&" ExprShift<S,B,L,T> => (),
+    ExprAnd<S,B,L,"T"> "&1" ExprShift<S,B,L,T> => (),
 };
 
 ExprShift<S,B,L,T>: () = {
@@ -884,7 +871,7 @@ ExprPrefix<S,B,L>: () = {
     "-" ExprPrefix<S,B,L> => (),
     "!" ExprPrefix<S,B,L> => (),
     "*" ExprPrefix<S,B,L> => (),
-    "&" maybe_mut ExprPrefix<S,B,L> => (),
+    AnyAmp maybe_mut ExprPrefix<S,B,L> => (),
 };
 
 ExprAtom<S,B,L>: () = {
@@ -903,67 +890,66 @@ ExprAtom<S,B,L>: () = {
     Expr_qualified_path => (),
     ExprStmtLike if L != "" => (),
     block if B != "" => (),
-    ANDAND maybe_mut ExprRestricted<S,B,L> => (),
 };
 
 Expr_qualified_path: () = {
   "<" ty_sum maybe_as_trait_ref ">" "::" ident maybe_qpath_params => (),
   SHL ty_sum maybe_as_trait_ref ">" "::" ident maybe_as_trait_ref ">" "::" ident => (),
-  SHL ty_sum maybe_as_trait_ref ">" "::" ident generic_args maybe_as_trait_ref ">" "::" ident => (),
-  SHL ty_sum maybe_as_trait_ref ">" "::" ident maybe_as_trait_ref ">" "::" ident generic_args => (),
-  SHL ty_sum maybe_as_trait_ref ">" "::" ident generic_args maybe_as_trait_ref ">" "::" ident generic_args => (),
+  SHL ty_sum maybe_as_trait_ref ">" "::" ident GenericArgs maybe_as_trait_ref ">" "::" ident => (),
+  SHL ty_sum maybe_as_trait_ref ">" "::" ident maybe_as_trait_ref ">" "::" ident GenericArgs => (),
+  SHL ty_sum maybe_as_trait_ref ">" "::" ident GenericArgs maybe_as_trait_ref ">" "::" ident GenericArgs => (),
 };
 maybe_qpath_params: () = {
-  "::" generic_args => (),
+  "::" GenericArgs => (),
   () => (),
 };
 maybe_as_trait_ref: () = {
   "as" trait_ref => (),
   () => (),
 };
+
 LambdaExpr<S,B,L>: () = {
-    AnyPipe Comma<inferrable_param>? "|1" ExprRestricted<S,B,L> => (),
-    AnyPipe Comma<inferrable_param>? "|1" "->" ty "{" Expr "}" => (),
+    AnyPipe Comma<inferrable_param> "|1" ExprRestricted<S,B,L> => (),
+    AnyPipe Comma<inferrable_param> "|1" "->" ty "{" Expr "}" => (),
 };
-struct_expr_fields: () = {
-  field_inits => (),
-  field_inits "," => (),
-  maybe_field_inits default_field_init => (),
+
+StructExprFields: () = {
+    FieldValues => (),
+    FieldValues "," => (),
+    FieldValues "," ".." Expr => (),
+    ".." Expr => ()
 };
-maybe_field_inits: () = {
-  field_inits => (),
-  field_inits "," => (),
-  () => (),
+
+// Note: this is not the same as Comma<FieldValue>, because it does
+// not admit an empty list, and it also does not accept a trailing `,`.
+FieldValues: () = {
+    FieldValue => (),
+    FieldValues "," FieldValue => (),
 };
-field_inits: () = {
-  field_init => (),
-  field_inits "," field_init => (),
+
+FieldValue: () = {
+    ident ":" Expr => ()
 };
-field_init: () = {
-  ident ":" Expr => (),
-};
-default_field_init: () = {
-  ".." Expr => (),
-};
+
 ExprStmtLike: () = {
-  Expr_match => (),
-  Expr_if => (),
-  Expr_if_let => (),
-  Expr_while => (),
-  Expr_while_let => (),
-  Expr_loop => (),
-  Expr_for => (),
+  ExprMatch => (),
+  ExprIf => (),
+  ExprIfLet => (),
+  ExprWhile => (),
+  ExprWhileLet => (),
+  ExprLoop => (),
+  ExprFor => (),
   "unsafe" block => (),
   PathExpr "!" ident? braces_delimited_token_trees => (),
 };
 ExprStmtLikeSuffix: () = {
   ExprStmtLike => (),
-  ExprStmtLikeSuffix "." path_generic_args_with_colons => (),
-  ExprStmtLikeSuffix "." path_generic_args_with_colons "[" maybe_expr "]" => (),
-  ExprStmtLikeSuffix "." path_generic_args_with_colons "(" maybe_exprs ")" => (),
+  ExprStmtLikeSuffix "." Path<"::"> => (),
+  ExprStmtLikeSuffix "." Path<"::"> "[" Expr? "]" => (),
+  ExprStmtLikeSuffix "." Path<"::"> "(" Comma<Expr> ")" => (),
   ExprStmtLikeSuffix "." LIT_INTEGER => (),
 };
-Expr_match: () = {
+ExprMatch: () = {
   "match" ExprNoStruct "{" "}" => (),
   "match" ExprNoStruct "{" match_clauses "}" => (),
   "match" ExprNoStruct "{" match_clauses nonblock_match_clause "}" => (),
@@ -1046,7 +1032,6 @@ unpaired_token: () = {
   EQEQ => (),
   NE => (),
   GE => (),
-  ANDAND => (),
   "<-" => (),
   "<<=" => (),
   ">>=" => (),
@@ -1127,9 +1112,10 @@ unpaired_token: () = {
   "<" => (),
   ">" => (),
   "-" => (),
-  "&" => (),
   "|+" => (),
   "|1" => (),
+  "&+" => (),
+  "&1" => (),
   "+" => (),
   "*" => (),
   "/" => (),
@@ -1173,13 +1159,20 @@ Delim<E,D>: () =
     <v0:(<E> D)*> <e1:E?> => ();
 
 #[inline]
-OROR: () =
-    "|+" "|1";
-
-#[inline]
 AnyPipe: () = {
     "|+" => (),
     "|1" => (),
+};
+
+#[inline]
+AnyAmp: () = {
+    "&+" => (),
+    "&1" => (),
+};
+
+#[inline]
+Epsilon: () = {
+    () => ()
 };
 
 extern {
@@ -1188,7 +1181,6 @@ extern {
         "#" => Token1,
         "$" => Token2,
         "%" => Token3,
-        "&" => Token4,
         "(" => Token5,
         ")" => Token6,
         "*" => Token7,
@@ -1210,6 +1202,8 @@ extern {
         "{" => Token23,
         "|+" => Token24a,  // "|" followed immediately by another "|"
         "|1" => Token24b,  // "|" followed by non-pipe
+        "&+" => Token24c,  // as above
+        "&1" => Token24d,
         "}" => Token25,
         "~" => Token26,
         SHL => Token27,
@@ -1218,7 +1212,6 @@ extern {
         EQEQ => Token30,
         NE => Token31,
         GE => Token32,
-        ANDAND => Token33,
         "<<=" => Token35,
         ">>=" => Token36,
         "-=" => Token37,
