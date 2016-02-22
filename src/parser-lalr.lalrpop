@@ -436,15 +436,7 @@ path_no_types_allowed: () = {
   "::" "self" => (),
   path_no_types_allowed "::" ident => (),
 };
-path_generic_args_without_colons: () = {
-  ident => (),
-  ident generic_args => (),
-  ident "(" maybe_ty_sums ")" ret_ty => (),
-  path_generic_args_without_colons "::" ident => (),
-  path_generic_args_without_colons "::" ident generic_args => (),
-  path_generic_args_without_colons "::" ident "(" maybe_ty_sums ")" ret_ty => (),
-};
-generic_args: () = {
+GenericArgs: () = {
   "<" generic_values ">" => (),
   "<" generic_values SHR => (),
   "<" generic_values GE => (),
@@ -688,8 +680,7 @@ lifetime: () = {
   "'static" => (),
 };
 trait_ref: () = {
-  path_generic_args_without_colons => (),
-  "::" path_generic_args_without_colons => (),
+  Path<Epsilon> => (),
 };
 inner_attrs_and_block: () = {
   "{" inner_attr* maybe_stmts "}" => (),
@@ -718,29 +709,22 @@ stmt: () = {
   ExprNoStmtLike ";" => (),
   ";" => (),
 };
-maybe_exprs: () = {
-  exprs => (),
-  exprs "," => (),
-  () => (),
-};
-maybe_expr: () = {
-  Expr => (),
-  () => (),
-};
-exprs: () = {
-  Expr => (),
-  exprs "," Expr => (),
-};
+
 PathExpr: () = {
-  path_generic_args_with_colons => (),
-  "::" path_generic_args_with_colons => (),
-  "self" "::" path_generic_args_with_colons => (),
+    Path<"::">
 };
-path_generic_args_with_colons: () = {
-  ident => (),
-  path_generic_args_with_colons "::" ident => (),
-  path_generic_args_with_colons "::" generic_args => (),
+
+// Parses a path like `x::y::z`, where A is the token that separates
+// the generic arguments.
+Path<ARG_SEP>: () = {
+    ident => (),
+    "::" ident => (),
+    "self" "::" ident => (),
+    "super" "::" ident => (),
+    Path<ARG_SEP> "::" ident => (),
+    Path<ARG_SEP> ARG_SEP GenericArgs => (),
 };
+
 MacroExpr: () = {
   PathExpr "!" ident? parens_delimited_token_trees => (),
   PathExpr "!" ident? brackets_delimited_token_trees => (),
@@ -1059,6 +1043,7 @@ unpaired_token: () = {
   UNDERSCORE => (),
   LIFETIME => (),
   "self" => (),
+  "super" => (),
   "static" => (),
   "as" => (),
   "break" => (),
@@ -1240,6 +1225,7 @@ extern {
         UNDERSCORE => Token60,
         LIFETIME => Token61,
         "self" => Token62,
+        "super" => Token62,
         "static" => Token63,
         "as" => Token64,
         "break" => Token65,
