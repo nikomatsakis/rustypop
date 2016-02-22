@@ -381,9 +381,9 @@ anon_params_allow_variadic_tail: () = {
 };
 named_arg: () = {
   ident => (),
-  UNDERSCORE => (),
+  "_" => (),
   "&1" ident => (),
-  "&1" UNDERSCORE => (),
+  "&1" "_" => (),
   "mut" ident => (),
 };
 ret_ty: () = {
@@ -466,7 +466,7 @@ maybe_bindings: () = {
 Pat: () = PatWithBindingMode<BindingMode>;
 
 PatWithBindingMode<BM>: () = {
-    UNDERSCORE => (),
+    "_" => (),
     AnyAmp PatWithBindingMode<RefBindingMode> => (),
     AnyAmp "mut" Pat => (),
     "(" Comma<Pat> ")" => (),
@@ -556,7 +556,7 @@ ty_prim: () = {
   "[" ty "," ".." Expr "]" => (),
   "[" ty ";" Expr "]" => (),
   "typeof" "(" Expr ")" => (),
-  UNDERSCORE => (),
+  "_" => (),
   ty_bare_fn => (),
   for_in_type => (),
 };
@@ -1035,7 +1035,7 @@ unpaired_token: () = {
   LIT_BYTE_STR => (),
   LIT_BYTE_STR_RAW => (),
   IDENT => (),
-  UNDERSCORE => (),
+  "_" => (),
   LIFETIME => (),
   "self" => (),
   "super" => (),
@@ -1217,7 +1217,7 @@ extern {
         LIT_BYTE_STR => Token57,
         LIT_BYTE_STR_RAW => Token58,
         IDENT => Token59,
-        UNDERSCORE => Token60,
+        "_" => Token60,
         LIFETIME => Token61,
         "self" => Token62,
         "super" => Token62,
