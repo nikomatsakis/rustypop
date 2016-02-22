@@ -190,7 +190,7 @@ foreign_item: () = {
   attrs_and_vis "unsafe" item_foreign_fn => (),
 };
 item_foreign_static: () = {
-  maybe_mut ident ":" ty ";" => (),
+  "mut"? ident ":" ty ";" => (),
 };
 item_foreign_fn: () = {
   "fn" ident generic_params fn_decl_allow_variadic maybe_where_clause ";" => (),
@@ -323,15 +323,15 @@ fn_anon_params: () = {
   "(" ")" => (),
 };
 fn_params_with_self: () = {
-  "(" maybe_mut "self" maybe_ty_ascription maybe_comma_params ")" => (),
-  "(" "&1" maybe_mut "self" maybe_ty_ascription maybe_comma_params ")" => (),
-  "(" "&1" lifetime maybe_mut "self" maybe_ty_ascription maybe_comma_params ")" => (),
+  "(" "mut"? "self" maybe_ty_ascription maybe_comma_params ")" => (),
+  "(" "&1" "mut"? "self" maybe_ty_ascription maybe_comma_params ")" => (),
+  "(" "&1" lifetime "mut"? "self" maybe_ty_ascription maybe_comma_params ")" => (),
   "(" maybe_params ")" => (),
 };
 fn_anon_params_with_self: () = {
-  "(" maybe_mut "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
-  "(" "&1" maybe_mut "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
-  "(" "&1" lifetime maybe_mut "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
+  "(" "mut"? "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
+  "(" "&1" "mut"? "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
+  "(" "&1" lifetime "mut"? "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
   "(" maybe_anon_params ")" => (),
 };
 maybe_params: () = {
@@ -548,10 +548,10 @@ ty: () = {
 ty_prim: () = {
   Path<Epsilon> => (),
   "box" ty => (),
-  "*" maybe_mut_or_const ty => (),
+  "*" mut_or_const ty => (),
   AnyAmp ty => (),
   AnyAmp "mut" ty => (),
-  AnyAmp lifetime maybe_mut ty => (),
+  AnyAmp lifetime "mut"? ty => (),
   "[" ty "]" => (),
   "[" ty "," ".." Expr "]" => (),
   "[" ty ";" Expr "]" => (),
@@ -576,14 +576,9 @@ for_in_type_suffix: () = {
   ty_bare_fn => (),
   trait_ref => (),
 };
-maybe_mut: () = {
-  "mut" => (),
-  () => (),
-};
-maybe_mut_or_const: () = {
+mut_or_const: () = {
   "mut" => (),
   "const" => (),
-  () => (),
 };
 ty_qualified_path_and_generic_values: () = {
   ty_qualified_path maybe_bindings => (),
@@ -855,7 +850,7 @@ ExprPrefix<S,B,L>: () = {
     "-" ExprPrefix<S,B,L> => (),
     "!" ExprPrefix<S,B,L> => (),
     "*" ExprPrefix<S,B,L> => (),
-    AnyAmp maybe_mut ExprPrefix<S,B,L> => (),
+    AnyAmp "mut"? ExprPrefix<S,B,L> => (),
 };
 
 ExprAtom<S,B,L>: () = {
