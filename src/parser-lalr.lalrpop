@@ -778,33 +778,31 @@ ExprNoStmtLike: () = Expr<":no_block:,:no_stmtlike:">;
 //
 // etc.
 Expr<V>: () = {
-    ExprAssign<V>,
+    ExprOrOr<V> => (),
     "return" if V !~ ":no_struct:" => (), // FIXME#1
-    "return" Expr<V> if V !~ ":no_struct:" => (), // FIXME#1
+    "return" ExprOptionalRhs<V> if V !~ ":no_struct:" => (), // FIXME#1
+    ".." => (),
+    LambdaExpr<V> => (),
+    "move" LambdaExpr<V> => (),
+    ExprOrOr<V> "=" Expr<V> => (),
+    ExprOrOr<V> "<-" Expr<V> => (),
+    ExprOrOr<V> ".." => (),
+    ExprOrOr<V> ".." ExprOptionalRhs<V> => (),
+    ExprOrOr<V> "<<=" Expr<V> => (),
+    ExprOrOr<V> ">>=" Expr<V> => (),
+    ExprOrOr<V> "-=" Expr<V> => (),
+    ExprOrOr<V> "&=" Expr<V> => (),
+    ExprOrOr<V> "|=" Expr<V> => (),
+    ExprOrOr<V> "+=" Expr<V> => (),
+    ExprOrOr<V> "*=" Expr<V> => (),
+    ExprOrOr<V> "/=" Expr<V> => (),
+    ExprOrOr<V> "^=" Expr<V> => (),
+    ExprOrOr<V> "%=" Expr<V> => (),
 };
 
-ExprArg<V>: () = {
+ExprOptionalRhs<V>: () = {
     Expr<":no_block:,:no_struct:"> if V == ":no_struct:",
     Expr<V> if V != ":no_struct:" ,
-};
-
-ExprAssign<V>: () = {
-    ".." => (),
-    ExprOrOr<V> => (),
-    ExprOrOr<V> "=" ExprAssign<V> => (),
-    ExprOrOr<V> "<-" ExprAssign<V> => (),
-    ExprOrOr<V> ".." => (),
-    ExprOrOr<V> ".." ExprArg<V> => (),
-    ExprOrOr<V> "<<=" ExprAssign<V> => (),
-    ExprOrOr<V> ">>=" ExprAssign<V> => (),
-    ExprOrOr<V> "-=" ExprAssign<V> => (),
-    ExprOrOr<V> "&=" ExprAssign<V> => (),
-    ExprOrOr<V> "|=" ExprAssign<V> => (),
-    ExprOrOr<V> "+=" ExprAssign<V> => (),
-    ExprOrOr<V> "*=" ExprAssign<V> => (),
-    ExprOrOr<V> "/=" ExprAssign<V> => (),
-    ExprOrOr<V> "^=" ExprAssign<V> => (),
-    ExprOrOr<V> "%=" ExprAssign<V> => (),
 };
 
 ExprOrOr<V>: () = {
@@ -818,17 +816,13 @@ ExprAndAnd<V>: () = {
 };
 
 ExprEq<V>: () = {
-    ExprComparison<V>,
-    ExprEq<V> EQEQ ExprComparison<V> => (),
-    ExprEq<V> NE ExprComparison<V> => (),
-};
-
-ExprComparison<V>: () = {
     ExprOr<V>,
-    ExprComparison<V> "<" ExprOr<V> => (),
-    ExprComparison<V> ">" ExprOr<V> => (),
-    ExprComparison<V> LE ExprOr<V> => (),
-    ExprComparison<V> GE ExprOr<V> => (),
+    ExprOr<V> EQEQ ExprOr<V> => (),
+    ExprOr<V> NE ExprOr<V> => (),
+    ExprOr<V> "<" ExprOr<V> => (),
+    ExprOr<V> ">" ExprOr<V> => (),
+    ExprOr<V> LE ExprOr<V> => (),
+    ExprOr<V> GE ExprOr<V> => (),
 };
 
 ExprOr<V>: () = {
@@ -853,21 +847,21 @@ ExprShift<V>: () = {
 };
 
 ExprPlusMinus<V>: () = {
-    ExprAs<V>,
-    ExprPlusMinus<V> "+" ExprAs<V> => (),
-    ExprPlusMinus<V> "-" ExprAs<V> => (),
-};
-
-ExprAs<V>: () = {
     ExprMulDiv<V>,
-    ExprAs<V> "as" ExprMulDiv<V> => (),
+    ExprPlusMinus<V> "+" ExprMulDiv<V> => (),
+    ExprPlusMinus<V> "-" ExprMulDiv<V> => (),
 };
 
 ExprMulDiv<V>: () = {
+    ExprAs<V>,
+    ExprMulDiv<V> "*" ExprAs<V> => (),
+    ExprMulDiv<V> "/" ExprAs<V> => (),
+    ExprMulDiv<V> "%" ExprAs<V> => (),
+};
+
+ExprAs<V>: () = {
     ExprSuffix<V>,
-    ExprMulDiv<V> "*" ExprSuffix<V> => (),
-    ExprMulDiv<V> "/" ExprSuffix<V> => (),
-    ExprMulDiv<V> "%" ExprSuffix<V> => (),
+    ExprSuffix<V> "as" ty => (),
 };
 
 ExprSuffix<V>: () = {
@@ -903,8 +897,6 @@ ExprAtom<V>: () = {
     ExprStmtLike if V !~ ":no_stmtlike:" => (),
     block if V !~ ":no_block:" => (),
     ANDAND maybe_mut Expr<V> => (),
-    LambdaExpr<V> => (),
-    "move" LambdaExpr<V> => (),
 };
 
 expr_qualified_path: () = {
