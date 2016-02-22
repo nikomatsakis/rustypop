@@ -439,11 +439,11 @@ path_no_types_allowed: () = {
 GenericArgs: () = {
   "<" generic_values ">" => (),
   "<" generic_values SHR => (),
-  "<" generic_values GE => (),
+  "<" generic_values ">=" => (),
   "<" generic_values ">>=" => (),
   SHL ty_qualified_path_and_generic_values ">" => (),
   SHL ty_qualified_path_and_generic_values SHR => (),
-  SHL ty_qualified_path_and_generic_values GE => (),
+  SHL ty_qualified_path_and_generic_values ">=" => (),
   SHL ty_qualified_path_and_generic_values ">>=" => (),
 };
 generic_values: () = {
@@ -790,12 +790,12 @@ ExprEq<S,B,L>: () = {
 
 ExprEqOp<S,B,L,T>: () = {
     ExprOr<S,B,L,T>,
-    ExprOr<S,B,L,"T"> EQEQ ExprOr<S,B,L,T> => (),
-    ExprOr<S,B,L,"T"> NE ExprOr<S,B,L,T> => (),
+    ExprOr<S,B,L,"T"> "==" ExprOr<S,B,L,T> => (),
+    ExprOr<S,B,L,"T"> "!=" ExprOr<S,B,L,T> => (),
     ExprOr<S,B,L,""> "<" ExprOr<S,B,L,T> => (),
     ExprOr<S,B,L,"T"> ">" ExprOr<S,B,L,T> => (),
-    ExprOr<S,B,L,"T"> LE ExprOr<S,B,L,T> => (),
-    ExprOr<S,B,L,"T"> GE ExprOr<S,B,L,T> => (),
+    ExprOr<S,B,L,"T"> "<=" ExprOr<S,B,L,T> => (),
+    ExprOr<S,B,L,"T"> ">=" ExprOr<S,B,L,T> => (),
 };
 
 ExprOr<S,B,L,T>: () = {
@@ -1007,10 +1007,10 @@ ident: () = {
 unpaired_token: () = {
   SHL => (),
   SHR => (),
-  LE => (),
-  EQEQ => (),
-  NE => (),
-  GE => (),
+  "<=" => (),
+  "==" => (),
+  "!=" => (),
+  ">=" => (),
   "<-" => (),
   "<<=" => (),
   ">>=" => (),
@@ -1188,10 +1188,10 @@ extern {
         "~" => Token26,
         SHL => Token27,
         SHR => Token28,
-        LE => Token29,
-        EQEQ => Token30,
-        NE => Token31,
-        GE => Token32,
+        "<=" => Token29,
+        "==" => Token30,
+        "!=" => Token31,
+        ">=" => Token32,
         "<<=" => Token35,
         ">>=" => Token36,
         "-=" => Token37,
