@@ -844,7 +844,7 @@ ExprAs<S,B,L,T>: () = {
 
 ExprSuffix<S,B,L>: () = {
     ExprAtom<S,B,L>,
-    ExprSuffix<S,B,L> "." path_generic_args_with_colons => (),
+    ExprSuffix<S,B,L> "." Path<"::"> => (),
     ExprSuffix<S,B,L> "." LIT_INTEGER => (),
     ExprSuffix<S,B,L> "[" Expr "]" => (),
     ExprSuffix<S,B,L> "(" Comma<Expr> ")" => (),
@@ -863,7 +863,7 @@ ExprAtom<S,B,L>: () = {
     PathExpr => (),
     "self" => (),
     MacroExpr => (),
-    PathExpr "{" struct_expr_fields "}" if S != "" => (),
+    PathExpr "{" StructExprFields "}" if S != "" => (),
     "(" Comma<Expr> ")" => (),
     "[" Comma<Expr> "]" => (),
     "[" Expr ";" Expr "]" => (),
@@ -959,29 +959,29 @@ maybe_guard: () = {
   "if" ExprNoStruct => (),
   () => (),
 };
-Expr_if: () = {
+ExprIf: () = {
   "if" ExprNoStruct block => (),
   "if" ExprNoStruct block "else" block_or_if => (),
 };
-Expr_if_let: () = {
+ExprIfLet: () = {
   "if" "let" Pat "=" ExprNoStruct block => (),
   "if" "let" Pat "=" ExprNoStruct block "else" block_or_if => (),
 };
 block_or_if: () = {
   block => (),
-  Expr_if => (),
-  Expr_if_let => (),
+  ExprIf => (),
+  ExprIfLet => (),
 };
-Expr_while: () = {
+ExprWhile: () = {
   maybe_label "while" ExprNoStruct block => (),
 };
-Expr_while_let: () = {
+ExprWhileLet: () = {
   maybe_label "while" "let" Pat "=" ExprNoStruct block => (),
 };
-Expr_loop: () = {
+ExprLoop: () = {
   maybe_label "loop" block => (),
 };
-Expr_for: () = {
+ExprFor: () = {
   maybe_label "for" Pat "in" ExprNoStruct block => (),
 };
 maybe_label: () = {
