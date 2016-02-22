@@ -1,3 +1,20 @@
+// FIXME#1
+//
+// We currently accept `if return { /* expr */ } { /* then */ }` but
+// it is unclear if we *should* do so (in fact, I would argue that we
+// should not, because it is inconsistent with `if Struct { ... }`)
+// and `if 3 .. {`. Options to resolve:
+//
+//    - disallow `if return/break/continue` altogether
+//      - I lump in `break/continue` to allow for future compat where
+//        they take an argument, but also because they are all
+//        unconditionall diverging control-flow expressions
+//    - permit `if return/break/continue` but not with a block argument
+//      - consistent, but what's the point?
+//    - kepe things as they are today
+//
+// I opted for #1 so far.
+
 grammar;
 pub crate: () = {
   shebang? inner_attr* mod_item* => (),
@@ -738,58 +755,51 @@ MacroExpr: () = {
 
 // Old-style names:
 expr: () = Expr<"">;
-expr_nostruct: () = Expr<"nostruct">;
-nonblock_expr: () = Expr<"nonblock">;
-nonparen_expr: () = Expr<"nonparen">;
+nonblock_expr: () = Expr<"">;
+nonparen_expr: () = Expr<"">;
 
 // New-style names:
 Expression: () = Expr<"">;
 
-// "V" is the Expr "Variant", and is intended to be a list of
-// restrictions, e.g.:
+ExprNoStruct: () = Expr<"no_struct">;
+
+// "V" is the Expr "Variant" and it indicates the context
+// in which the expression appears. It is used to tweak
+// the set of permitted expressions.
 //
-// - "" -- most general form of expressions
-// - "nonblock"
-// - "nonparen"
-// - "nostruct"
-// - "nonblock,nonparen"
-// - "norange"
+// Defined variants:
+// - "no_struct" --> do not permit `Struct {`
+// - "no_block" --> do not permit `{ .. }`
 //
 // etc.
 Expr<V>: () = {
     ExprAssign<V>,
-    "return" => (),
-    "return" Expr<V> => (),
+    "return" if V !~ "no_struct" => (), // FIXME#1
+    "return" Expr<V> if V !~ "no_struct" => (), // FIXME#1
+};
+
+ExprArg<V>: () = {
+    Expr<"no_struct,no_block"> if V == "no_struct",
+    Expr<V> if V != "no_struct" ,
 };
 
 ExprAssign<V>: () = {
-    ExprEmplace<V> => (),
-    ExprEmplace<V> "=" ExprAssign<V> => (),
-    ExprEmplace<V> "<<=" ExprAssign<V> => (),
-    ExprEmplace<V> ">>=" ExprAssign<V> => (),
-    ExprEmplace<V> "-=" ExprAssign<V> => (),
-    ExprEmplace<V> "&=" ExprAssign<V> => (),
-    ExprEmplace<V> "|=" ExprAssign<V> => (),
-    ExprEmplace<V> "+=" ExprAssign<V> => (),
-    ExprEmplace<V> "*=" ExprAssign<V> => (),
-    ExprEmplace<V> "/=" ExprAssign<V> => (),
-    ExprEmplace<V> "^=" ExprAssign<V> => (),
-    ExprEmplace<V> "%=" ExprAssign<V> => (),
-};
-
-ExprEmplace<V>: () = {
-    ExprJustRange<V>,
-    ExprJustRange<V> "<-" ExprEmplace<V> => (),
-};
-
-ExprJustRange<V>: () = {
-    ExprPostRange<V>,
     ".." => (),
-};
-
-// Placeholder for whatever has higher precedence than `..` by itself.
-ExprPostRange<V>: () = {
-    ExprOrOr<V>
+    ExprOrOr<V> => (),
+    ExprOrOr<V> "=" ExprAssign<V> => (),
+    ExprOrOr<V> "<-" ExprAssign<V> => (),
+    ExprOrOr<V> ".." => (),
+    ExprOrOr<V> ".." ExprArg<V> => (),
+    ExprOrOr<V> "<<=" ExprAssign<V> => (),
+    ExprOrOr<V> ">>=" ExprAssign<V> => (),
+    ExprOrOr<V> "-=" ExprAssign<V> => (),
+    ExprOrOr<V> "&=" ExprAssign<V> => (),
+    ExprOrOr<V> "|=" ExprAssign<V> => (),
+    ExprOrOr<V> "+=" ExprAssign<V> => (),
+    ExprOrOr<V> "*=" ExprAssign<V> => (),
+    ExprOrOr<V> "/=" ExprAssign<V> => (),
+    ExprOrOr<V> "^=" ExprAssign<V> => (),
+    ExprOrOr<V> "%=" ExprAssign<V> => (),
 };
 
 ExprOrOr<V>: () = {
@@ -849,18 +859,10 @@ ExprAs<V>: () = {
 };
 
 ExprMulDiv<V>: () = {
-    ExprRange<V>,
-    ExprMulDiv<V> "*" ExprRange<V> => (),
-    ExprMulDiv<V> "/" ExprRange<V> => (),
-    ExprMulDiv<V> "%" ExprRange<V> => (),
-};
-
-// FIXE
-ExprRange<V>: () = {
     ExprSuffix<V>,
-    ExprSuffix<V> ".." => (),
-    ExprSuffix<V> ".." ExprPostRange<V> => (),
-    ".." ExprRange<V> => (),
+    ExprMulDiv<V> "*" ExprSuffix<V> => (),
+    ExprMulDiv<V> "/" ExprSuffix<V> => (),
+    ExprMulDiv<V> "%" ExprSuffix<V> => (),
 };
 
 ExprSuffix<V>: () = {
@@ -884,17 +886,17 @@ ExprAtom<V>: () = {
     PathExpr => (),
     "self" => (),
     MacroExpr => (),
-    PathExpr "{" struct_expr_fields "}" => (),
+    PathExpr "{" struct_expr_fields "}" if V !~ "no_struct" => (),
     "(" Comma<Expression> ")" => (),
     "[" Comma<Expression> "]" => (),
     "[" Expression ";" Expression "]" => (),
-    "continue" => (),
-    "continue" ident => (),
-    "break" => (),
-    "break" ident => (),
+    "continue" if V !~ "no_struct" => (), // FIXME#1
+    "continue" ident if V !~ "no_struct" => (), // FIXME#1
+    "break" if V !~ "no_struct" => (), // FIXME#1
+    "break" ident if V !~ "no_struct" => (), // FIXME#1
     expr_qualified_path => (),
     block_expr => (),
-    block => (),
+    block if V !~ "no_block" => (),
     ANDAND maybe_mut Expr<V> => (),
     LambdaExpr<V> => (),
     "move" LambdaExpr<V> => (),
@@ -958,10 +960,10 @@ full_block_expr: () = {
   full_block_expr "." LIT_INTEGER => (),
 };
 expr_match: () = {
-  "match" expr_nostruct "{" "}" => (),
-  "match" expr_nostruct "{" match_clauses "}" => (),
-  "match" expr_nostruct "{" match_clauses nonblock_match_clause "}" => (),
-  "match" expr_nostruct "{" nonblock_match_clause "}" => (),
+  "match" ExprNoStruct "{" "}" => (),
+  "match" ExprNoStruct "{" match_clauses "}" => (),
+  "match" ExprNoStruct "{" match_clauses nonblock_match_clause "}" => (),
+  "match" ExprNoStruct "{" nonblock_match_clause "}" => (),
 };
 match_clauses: () = {
   match_clause => (),
@@ -980,16 +982,16 @@ block_match_clause: () = {
   maybe_outer_attrs pats_or maybe_guard "->" block => (),
 };
 maybe_guard: () = {
-  "if" expr_nostruct => (),
+  "if" ExprNoStruct => (),
   () => (),
 };
 expr_if: () = {
-  "if" expr_nostruct block => (),
-  "if" expr_nostruct block "else" block_or_if => (),
+  "if" ExprNoStruct block => (),
+  "if" ExprNoStruct block "else" block_or_if => (),
 };
 expr_if_let: () = {
-  "if" "let" Pat "=" expr_nostruct block => (),
-  "if" "let" Pat "=" expr_nostruct block "else" block_or_if => (),
+  "if" "let" Pat "=" ExprNoStruct block => (),
+  "if" "let" Pat "=" ExprNoStruct block "else" block_or_if => (),
 };
 block_or_if: () = {
   block => (),
@@ -997,16 +999,16 @@ block_or_if: () = {
   expr_if_let => (),
 };
 expr_while: () = {
-  maybe_label "while" expr_nostruct block => (),
+  maybe_label "while" ExprNoStruct block => (),
 };
 expr_while_let: () = {
-  maybe_label "while" "let" Pat "=" expr_nostruct block => (),
+  maybe_label "while" "let" Pat "=" ExprNoStruct block => (),
 };
 expr_loop: () = {
   maybe_label "loop" block => (),
 };
 expr_for: () = {
-  maybe_label "for" Pat "in" expr_nostruct block => (),
+  maybe_label "for" Pat "in" ExprNoStruct block => (),
 };
 maybe_label: () = {
   lifetime ":" => (),
@@ -1055,7 +1057,6 @@ unpaired_token: () = {
   ".." => (),
   "..." => (),
   "::" => (),
-  "->" => (),
   "->" => (),
   LIT_BYTE => (),
   LIT_CHAR => (),
@@ -1229,7 +1230,6 @@ extern {
         "::" => Token47,
         "->" => Token48,
         "<-" => Token49,
-        "->" => Token50,
         LIT_BYTE => Token51,
         LIT_CHAR => Token52,
         LIT_INTEGER => Token53,
