@@ -706,8 +706,8 @@ block: () = {
 };
 maybe_stmts: () = {
   stmts => (),
-  stmts nonblock_expr => (),
-  nonblock_expr => (),
+  stmts ExprNoStmtLike => (),
+  ExprNoStmtLike => (),
   () => (),
 };
 stmts: () = {
@@ -720,9 +720,9 @@ stmt: () = {
   "pub" stmt_item => (),
   outer_attrs stmt_item => (),
   outer_attrs "pub" stmt_item => (),
-  full_block_expr => (),
+  ExprStmtLike => (),
   block => (),
-  nonblock_expr ";" => (),
+  ExprNoStmtLike ";" => (),
   ";" => (),
 };
 maybe_exprs: () = {
@@ -755,32 +755,37 @@ MacroExpr: () = {
 
 // Old-style names:
 expr: () = Expr<"">;
-nonblock_expr: () = Expr<"">;
 nonparen_expr: () = Expr<"">;
 
 // New-style names:
 Expression: () = Expr<"">;
 
-ExprNoStruct: () = Expr<"no_struct">;
+ExprNoStruct: () = Expr<":no_struct:">;
+ExprNoStmtLike: () = Expr<":no_block:,:no_stmtlike:">;
 
 // "V" is the Expr "Variant" and it indicates the context
 // in which the expression appears. It is used to tweak
-// the set of permitted expressions.
+// the set of permitted expressions. It is a kind of
+// list of restrictions:
 //
-// Defined variants:
-// - "no_struct" --> do not permit `Struct {`
-// - "no_block" --> do not permit `{ .. }`
+// - ":no_struct:" --> do not permit `Struct {`
+// - ":no_block:" --> do not permit `{ .. }`
+// - ":no_stmtlike:" --> do not permit `match { .. }` and friends
+//
+// These can be combined, so ":no_block:,:no_struct:" would mean no
+// structs or blocks. To cut down on possible variations, we maintain
+// the invariant that any such groupings be in alphabetical order.
 //
 // etc.
 Expr<V>: () = {
     ExprAssign<V>,
-    "return" if V !~ "no_struct" => (), // FIXME#1
-    "return" Expr<V> if V !~ "no_struct" => (), // FIXME#1
+    "return" if V !~ ":no_struct:" => (), // FIXME#1
+    "return" Expr<V> if V !~ ":no_struct:" => (), // FIXME#1
 };
 
 ExprArg<V>: () = {
-    Expr<"no_struct,no_block"> if V == "no_struct",
-    Expr<V> if V != "no_struct" ,
+    Expr<":no_block:,:no_struct:"> if V == ":no_struct:",
+    Expr<V> if V != ":no_struct:" ,
 };
 
 ExprAssign<V>: () = {
@@ -886,17 +891,17 @@ ExprAtom<V>: () = {
     PathExpr => (),
     "self" => (),
     MacroExpr => (),
-    PathExpr "{" struct_expr_fields "}" if V !~ "no_struct" => (),
+    PathExpr "{" struct_expr_fields "}" if V !~ ":no_struct:" => (),
     "(" Comma<Expression> ")" => (),
     "[" Comma<Expression> "]" => (),
     "[" Expression ";" Expression "]" => (),
-    "continue" if V !~ "no_struct" => (), // FIXME#1
-    "continue" ident if V !~ "no_struct" => (), // FIXME#1
-    "break" if V !~ "no_struct" => (), // FIXME#1
-    "break" ident if V !~ "no_struct" => (), // FIXME#1
+    "continue" if V !~ ":no_struct:" => (), // FIXME#1
+    "continue" ident if V !~ ":no_struct:" => (), // FIXME#1
+    "break" if V !~ ":no_struct:" => (), // FIXME#1
+    "break" ident if V !~ ":no_struct:" => (), // FIXME#1
     expr_qualified_path => (),
-    block_expr => (),
-    block if V !~ "no_block" => (),
+    ExprStmtLike if V !~ ":no_stmtlike:" => (),
+    block if V !~ ":no_block:" => (),
     ANDAND maybe_mut Expr<V> => (),
     LambdaExpr<V> => (),
     "move" LambdaExpr<V> => (),
@@ -941,7 +946,7 @@ field_init: () = {
 default_field_init: () = {
   ".." expr => (),
 };
-block_expr: () = {
+ExprStmtLike: () = {
   expr_match => (),
   expr_if => (),
   expr_if_let => (),
@@ -952,12 +957,12 @@ block_expr: () = {
   "unsafe" block => (),
   PathExpr "!" ident? braces_delimited_token_trees => (),
 };
-full_block_expr: () = {
-  block_expr => (),
-  full_block_expr "." path_generic_args_with_colons => (),
-  full_block_expr "." path_generic_args_with_colons "[" maybe_expr "]" => (),
-  full_block_expr "." path_generic_args_with_colons "(" maybe_exprs ")" => (),
-  full_block_expr "." LIT_INTEGER => (),
+ExprStmtLikeSuffix: () = {
+  ExprStmtLike => (),
+  ExprStmtLikeSuffix "." path_generic_args_with_colons => (),
+  ExprStmtLikeSuffix "." path_generic_args_with_colons "[" maybe_expr "]" => (),
+  ExprStmtLikeSuffix "." path_generic_args_with_colons "(" maybe_exprs ")" => (),
+  ExprStmtLikeSuffix "." LIT_INTEGER => (),
 };
 expr_match: () = {
   "match" ExprNoStruct "{" "}" => (),
@@ -975,11 +980,11 @@ match_clause: () = {
   block_match_clause "," => (),
 };
 nonblock_match_clause: () = {
-  maybe_outer_attrs pats_or maybe_guard "->" nonblock_expr => (),
-  maybe_outer_attrs pats_or maybe_guard "->" full_block_expr => (),
+  maybe_outer_attrs pats_or maybe_guard "=>" ExprNoStmtLike => (),
+  maybe_outer_attrs pats_or maybe_guard "=>" ExprStmtLikeSuffix => (),
 };
 block_match_clause: () = {
-  maybe_outer_attrs pats_or maybe_guard "->" block => (),
+  maybe_outer_attrs pats_or maybe_guard "=>" block => (),
 };
 maybe_guard: () = {
   "if" ExprNoStruct => (),
@@ -1229,6 +1234,7 @@ extern {
         "..." => Token46,
         "::" => Token47,
         "->" => Token48,
+        "=>" => Token48b,
         "<-" => Token49,
         LIT_BYTE => Token51,
         LIT_CHAR => Token52,
