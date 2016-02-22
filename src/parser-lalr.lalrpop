@@ -324,14 +324,14 @@ fn_anon_params: () = {
 };
 fn_params_with_self: () = {
   "(" "mut"? "self" maybe_ty_ascription maybe_comma_params ")" => (),
-  "(" "&1" "mut"? "self" maybe_ty_ascription maybe_comma_params ")" => (),
-  "(" "&1" lifetime "mut"? "self" maybe_ty_ascription maybe_comma_params ")" => (),
+  "(" "&[]" "mut"? "self" maybe_ty_ascription maybe_comma_params ")" => (),
+  "(" "&[]" lifetime "mut"? "self" maybe_ty_ascription maybe_comma_params ")" => (),
   "(" maybe_params ")" => (),
 };
 fn_anon_params_with_self: () = {
   "(" "mut"? "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
-  "(" "&1" "mut"? "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
-  "(" "&1" lifetime "mut"? "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
+  "(" "&[]" "mut"? "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
+  "(" "&[]" lifetime "mut"? "self" maybe_ty_ascription maybe_comma_anon_params ")" => (),
   "(" maybe_anon_params ")" => (),
 };
 maybe_params: () = {
@@ -382,8 +382,8 @@ anon_params_allow_variadic_tail: () = {
 named_arg: () = {
   ident => (),
   "_" => (),
-  "&1" ident => (),
-  "&1" "_" => (),
+  "&[]" ident => (),
+  "&[]" "_" => (),
   "mut" ident => (),
 };
 ret_ty: () = {
@@ -392,18 +392,12 @@ ret_ty: () = {
   () => (),
 };
 generic_params: () = {
-  "<" lifetimes ">" => (),
-  "<" lifetimes "," ">" => (),
-  "<" lifetimes SHR => (),
-  "<" lifetimes "," SHR => (),
-  "<" lifetimes "," ty_params ">" => (),
-  "<" lifetimes "," ty_params "," ">" => (),
-  "<" lifetimes "," ty_params SHR => (),
-  "<" lifetimes "," ty_params "," SHR => (),
-  "<" ty_params ">" => (),
-  "<" ty_params "," ">" => (),
-  "<" ty_params SHR => (),
-  "<" ty_params "," SHR => (),
+  TyLt lifetimes TyGt => (),
+  TyLt lifetimes "," TyGt => (),
+  TyLt lifetimes "," ty_params TyGt => (),
+  TyLt lifetimes "," ty_params "," TyGt => (),
+  TyLt ty_params TyGt => (),
+  TyLt ty_params "," TyGt => (),
   () => (),
 };
 maybe_where_clause: () = {
@@ -423,7 +417,7 @@ where_predicate: () = {
   for_lifetimes ty ":" ty_param_bounds => (),
 };
 for_lifetimes: () = {
-  "for" "<" lifetimes ">" => (),
+  "for" TyLt lifetimes TyGt => (),
 };
 ty_params: () = {
   ty_param => (),
@@ -437,14 +431,7 @@ path_no_types_allowed: () = {
   path_no_types_allowed "::" ident => (),
 };
 GenericArgs: () = {
-  "<" generic_values ">" => (),
-  "<" generic_values SHR => (),
-  "<" generic_values ">=" => (),
-  "<" generic_values ">>=" => (),
-  SHL ty_qualified_path_and_generic_values ">" => (),
-  SHL ty_qualified_path_and_generic_values SHR => (),
-  SHL ty_qualified_path_and_generic_values ">=" => (),
-  SHL ty_qualified_path_and_generic_values ">>=" => (),
+  TyLt generic_values TyGt => (),
 };
 generic_values: () = {
   maybe_lifetimes maybe_ty_sums_and_or_bindings => (),
@@ -481,12 +468,11 @@ PatWithBindingMode<BM>: () = {
     ident "@" Pat => (),
     BM ident "@" Pat => (),
     "box" Pat => (),
-    "<" ty_sum maybe_as_trait_ref ">" "::" ident => (),
-    SHL ty_sum maybe_as_trait_ref ">" "::" ident maybe_as_trait_ref ">" "::" ident => (),
+    TyLt ty_sum maybe_as_trait_ref TyGt "::" ident => (),
 };
 pats_or: () = {
   Pat => (),
-  pats_or "|1" Pat => (),
+  pats_or "|[]" Pat => (),
 };
 BindingMode: () = {
     RefBindingMode,
@@ -539,8 +525,7 @@ PatVec_elts: () = {
 };
 ty: () = {
   ty_prim => (),
-  "<" ty_sum maybe_as_trait_ref ">" "::" ident => (),
-  SHL ty_sum maybe_as_trait_ref ">" "::" ident maybe_as_trait_ref ">" "::" ident => (),
+  TyLt ty_sum maybe_as_trait_ref TyGt "::" ident => (),
   "(" ty_sums ")" => (),
   "(" ty_sums "," ")" => (),
   "(" ")" => (),
@@ -570,7 +555,7 @@ ty_fn_decl: () = {
   generic_params fn_anon_params ret_ty => (),
 };
 for_in_type: () = {
-  "for" "<" maybe_lifetimes ">" for_in_type_suffix => (),
+  "for" TyLt maybe_lifetimes TyGt for_in_type_suffix => (),
 };
 for_in_type_suffix: () = {
   ty_bare_fn => (),
@@ -585,8 +570,8 @@ ty_qualified_path_and_generic_values: () = {
   ty_qualified_path "," ty_sums maybe_bindings => (),
 };
 ty_qualified_path: () = {
-  ty_sum "as" trait_ref ">" "::" ident => (),
-  ty_sum "as" trait_ref ">" "::" ident "+" ty_param_bounds => (),
+  ty_sum "as" trait_ref TyGt "::" ident => (),
+  ty_sum "as" trait_ref TyGt "::" ident "+" ty_param_bounds => (),
 };
 maybe_ty_sums: () = {
   ty_sums => (),
@@ -618,7 +603,7 @@ boundseq: () = {
   boundseq "+" polybound => (),
 };
 polybound: () = {
-  "for" "<" maybe_lifetimes ">" bound => (),
+  "for" TyLt maybe_lifetimes TyGt bound => (),
   bound => (),
   "?" bound => (),
 };
@@ -775,12 +760,12 @@ ExprOptionalRhs<S,B,L>: () = {
 
 ExprOrOr<S,B,L>: () = {
     ExprAndAnd<S,B,L>,
-    ExprOrOr<S,B,L> "|+" "|1" ExprAndAnd<S,B,L> => (),
+    ExprOrOr<S,B,L> "|[|]" "|[]" ExprAndAnd<S,B,L> => (),
 };
 
 ExprAndAnd<S,B,L>: () = {
     ExprEq<S,B,L>,
-    ExprAndAnd<S,B,L> "&+" "&1" ExprEq<S,B,L> => (),
+    ExprAndAnd<S,B,L> "&[&]" "&[]" ExprEq<S,B,L> => (),
 };
 
 ExprEq<S,B,L>: () = {
@@ -792,15 +777,15 @@ ExprEqOp<S,B,L,T>: () = {
     ExprOr<S,B,L,T>,
     ExprOr<S,B,L,"T"> "==" ExprOr<S,B,L,T> => (),
     ExprOr<S,B,L,"T"> "!=" ExprOr<S,B,L,T> => (),
-    ExprOr<S,B,L,""> "<" ExprOr<S,B,L,T> => (),
-    ExprOr<S,B,L,"T"> ">" ExprOr<S,B,L,T> => (),
+    ExprOr<S,B,L,""> "<[]" ExprOr<S,B,L,T> => (),
+    ExprOr<S,B,L,"T"> ">[]" ExprOr<S,B,L,T> => (),
     ExprOr<S,B,L,"T"> "<=" ExprOr<S,B,L,T> => (),
     ExprOr<S,B,L,"T"> ">=" ExprOr<S,B,L,T> => (),
 };
 
 ExprOr<S,B,L,T>: () = {
     ExprXor<S,B,L,T>,
-    ExprOr<S,B,L,"T"> "|1" ExprXor<S,B,L,T> => (),
+    ExprOr<S,B,L,"T"> "|[]" ExprXor<S,B,L,T> => (),
 };
 
 ExprXor<S,B,L,T>: () = {
@@ -810,13 +795,13 @@ ExprXor<S,B,L,T>: () = {
 
 ExprAnd<S,B,L,T>: () = {
     ExprShift<S,B,L,T>,
-    ExprAnd<S,B,L,"T"> "&1" ExprShift<S,B,L,T> => (),
+    ExprAnd<S,B,L,"T"> "&[]" ExprShift<S,B,L,T> => (),
 };
 
 ExprShift<S,B,L,T>: () = {
     ExprPlusMinus<S,B,L,T>,
-    ExprShift<S,B,L,""> SHL ExprPlusMinus<S,B,L,""> => (),
-    ExprShift<S,B,L,""> SHR ExprPlusMinus<S,B,L,""> => (),
+    ExprShift<S,B,L,""> "<[<]" "<[]" ExprPlusMinus<S,B,L,""> => (),
+    ExprShift<S,B,L,""> ">[>]" ">[]" ExprPlusMinus<S,B,L,""> => (),
 };
 
 ExprPlusMinus<S,B,L,T>: () = {
@@ -872,12 +857,9 @@ ExprAtom<S,B,L>: () = {
 };
 
 Expr_qualified_path: () = {
-  "<" ty_sum maybe_as_trait_ref ">" "::" ident maybe_qpath_params => (),
-  SHL ty_sum maybe_as_trait_ref ">" "::" ident maybe_as_trait_ref ">" "::" ident => (),
-  SHL ty_sum maybe_as_trait_ref ">" "::" ident GenericArgs maybe_as_trait_ref ">" "::" ident => (),
-  SHL ty_sum maybe_as_trait_ref ">" "::" ident maybe_as_trait_ref ">" "::" ident GenericArgs => (),
-  SHL ty_sum maybe_as_trait_ref ">" "::" ident GenericArgs maybe_as_trait_ref ">" "::" ident GenericArgs => (),
+  TyLt ty_sum maybe_as_trait_ref TyGt "::" ident maybe_qpath_params => (),
 };
+
 maybe_qpath_params: () = {
   "::" GenericArgs => (),
   () => (),
@@ -888,8 +870,8 @@ maybe_as_trait_ref: () = {
 };
 
 LambdaExpr<S,B,L>: () = {
-    AnyPipe Comma<inferrable_param> "|1" ExprRestricted<S,B,L> => (),
-    AnyPipe Comma<inferrable_param> "|1" "->" ty "{" Expr "}" => (),
+    AnyPipe Comma<inferrable_param> "|[]" ExprRestricted<S,B,L> => (),
+    AnyPipe Comma<inferrable_param> "|[]" "->" ty "{" Expr "}" => (),
 };
 
 StructExprFields: () = {
@@ -1005,15 +987,8 @@ ident: () = {
   IDENT => (),
 };
 unpaired_token: () = {
-  SHL => (),
-  SHR => (),
-  "<=" => (),
   "==" => (),
   "!=" => (),
-  ">=" => (),
-  "<-" => (),
-  "<<=" => (),
-  ">>=" => (),
   "-=" => (),
   "&=" => (),
   "|=" => (),
@@ -1089,13 +1064,20 @@ unpaired_token: () = {
   "=" => (),
   "?" => (),
   "!" => (),
-  "<" => (),
-  ">" => (),
+  "<<=" => (),
+  ">>=" => (),
+  "<-" => (),
+  "<=" => (),
+  ">=" => (),
+  "<[<]" => (),
+  "<[]" => (),
+  ">[>]" => (),
+  ">[]" => (),
   "-" => (),
-  "|+" => (),
-  "|1" => (),
-  "&+" => (),
-  "&1" => (),
+  "|[|]" => (),
+  "|[]" => (),
+  "&[&]" => (),
+  "&[]" => (),
   "+" => (),
   "*" => (),
   "/" => (),
@@ -1140,14 +1122,30 @@ Delim<E,D>: () =
 
 #[inline]
 AnyPipe: () = {
-    "|+" => (),
-    "|1" => (),
+    "|[|]" => (),
+    "|[]" => (),
 };
 
 #[inline]
 AnyAmp: () = {
-    "&+" => (),
-    "&1" => (),
+    "&[&]" => (),
+    "&[]" => (),
+};
+
+// Extract one `<` when used as part of a series of `<` in a row, like
+// `<<` or `<<<` or `<<<<<`. Intended for use in types.
+#[inline]
+TyLt: () = {
+    "<[<]" => (),
+    "<[]" => (),
+};
+
+// Extract one `>` when used as part of a series of `>` in a row, like
+// `>>` or `>>>` or `>>>>>`. Intended for use in types.
+#[inline]
+TyGt: () = {
+    ">[>]" => (),
+    ">[]" => (),
 };
 
 #[inline]
@@ -1171,29 +1169,17 @@ extern {
         "/" => Token12,
         ":" => Token13,
         ";" => Token14,
-        "<" => Token15,
         "=" => Token16,
-        ">" => Token17,
         "?" => Token18,
         "@" => Token19,
         "[" => Token20,
         "]" => Token21,
         "^" => Token22,
         "{" => Token23,
-        "|+" => Token24a,  // "|" followed immediately by another "|"
-        "|1" => Token24b,  // "|" followed by non-pipe
-        "&+" => Token24c,  // as above
-        "&1" => Token24d,
         "}" => Token25,
         "~" => Token26,
-        SHL => Token27,
-        SHR => Token28,
-        "<=" => Token29,
         "==" => Token30,
         "!=" => Token31,
-        ">=" => Token32,
-        "<<=" => Token35,
-        ">>=" => Token36,
         "-=" => Token37,
         "&=" => Token38,
         "|=" => Token39,
@@ -1207,7 +1193,27 @@ extern {
         "::" => Token47,
         "->" => Token48,
         "=>" => Token48b,
-        "<-" => Token49,
+
+        "<<=" => Token15,
+        ">>=" => Token15,
+        "<-" => Token15,
+        "<=" => Token15,
+        ">=" => Token15,
+
+        // Compute tokens. The notation `x[y]` means "an x adjacent to
+        // a y" and the notation `x[]` means "an x adjacent to nothing
+        // of interest". So if we see `<<`, we will produce two
+        // tokens: `<[<] <[]`, but if we see `<<=`, we would produce
+        // three tokens: `<[<=] <[=] =`.
+        "|[|]" => Token24a,  // "|" followed immediately by another "|"
+        "|[]" => Token24b,  // "|" followed by non-pipe
+        "&[&]" => Token24c,  // as above
+        "&[]" => Token24d,
+        "<[<]" => Token15,
+        "<[]" => Token15,
+        ">[>]" => Token15,
+        ">[]" => Token15,
+
         LIT_BYTE => Token51,
         LIT_CHAR => Token52,
         LIT_INTEGER => Token53,
