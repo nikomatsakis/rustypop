@@ -14,6 +14,12 @@
 //    - kepe things as they are today
 //
 // I opted for #1 so far.
+//
+// FIXME#2
+//
+// I am currently disallowing things like `x as (i32) < y as (i32)`;
+// to fix this I have to propagate the restrictions against type
+// arguments into the Ty grammar.
 
 grammar;
 pub crate: () = {
@@ -66,11 +72,11 @@ stmt_item: () = {
   view_item => (),
 };
 item_static: () = {
-  "static" ident ":" ty "=" expr ";" => (),
-  "static" "mut" ident ":" ty "=" expr ";" => (),
+  "static" ident ":" ty "=" Expr ";" => (),
+  "static" "mut" ident ":" ty "=" Expr ";" => (),
 };
 item_const: () = {
-  "const" ident ":" ty "=" expr ";" => (),
+  "const" ident ":" ty "=" Expr ";" => (),
 };
 item_macro: () = {
   PathExpr "!" ident? parens_delimited_token_trees ";" => (),
@@ -118,7 +124,7 @@ maybe_ty_ascription: () = {
   () => (),
 };
 maybe_init_expr: () = {
-  "=" expr => (),
+  "=" Expr => (),
   () => (),
 };
 item_struct: () = {
@@ -165,7 +171,7 @@ enum_args: () = {
   "{" struct_decl_fields "}" => (),
   "{" struct_decl_fields "," "}" => (),
   "(" maybe_ty_sums ")" => (),
-  "=" expr => (),
+  "=" Expr => (),
   () => (),
 };
 item_mod: () = {
@@ -239,7 +245,7 @@ trait_const: () = {
   maybe_outer_attrs "const" ident maybe_ty_ascription maybe_const_default ";" => (),
 };
 maybe_const_default: () = {
-  "=" expr => (),
+  "=" Expr => (),
   () => (),
 };
 trait_type: () = {
@@ -568,9 +574,9 @@ ty_prim: () = {
   "&" lifetime maybe_mut ty => (),
   ANDAND lifetime maybe_mut ty => (),
   "[" ty "]" => (),
-  "[" ty "," ".." expr "]" => (),
-  "[" ty ";" expr "]" => (),
-  "typeof" "(" expr ")" => (),
+  "[" ty "," ".." Expr "]" => (),
+  "[" ty ";" Expr "]" => (),
+  "typeof" "(" Expr ")" => (),
   UNDERSCORE => (),
   ty_bare_fn => (),
   for_in_type => (),
@@ -731,12 +737,12 @@ maybe_exprs: () = {
   () => (),
 };
 maybe_expr: () = {
-  expr => (),
+  Expr => (),
   () => (),
 };
 exprs: () = {
-  expr => (),
-  exprs "," expr => (),
+  Expr => (),
+  exprs "," Expr => (),
 };
 PathExpr: () = {
   path_generic_args_with_colons => (),
@@ -753,153 +759,154 @@ MacroExpr: () = {
   PathExpr "!" ident? brackets_delimited_token_trees => (),
 };
 
-// Old-style names:
-expr: () = Expr<"">;
-nonparen_expr: () = Expr<"">;
-
 // New-style names:
-Expression: () = Expr<"">;
+Expr: () = ExprRestricted<"S","B","L">;
+ExprNoStruct: () = ExprRestricted<"","B","L">;
+ExprNoStmtLike: () = ExprRestricted<"S","","">;
 
-ExprNoStruct: () = Expr<":no_struct:">;
-ExprNoStmtLike: () = Expr<":no_block:,:no_stmtlike:">;
-
-// "V" is the Expr "Variant" and it indicates the context
-// in which the expression appears. It is used to tweak
-// the set of permitted expressions. It is a kind of
-// list of restrictions:
+// The parameters must be either "" or "[SBLT]". They
+// are used to select subsets of expressions. Not all
+// the parameters apply to all subsets of expressions.
 //
-// - ":no_struct:" --> do not permit `Struct {`
-// - ":no_block:" --> do not permit `{ .. }`
-// - ":no_stmtlike:" --> do not permit `match { .. }` and friends
-//
-// These can be combined, so ":no_block:,:no_struct:" would mean no
-// structs or blocks. To cut down on possible variations, we maintain
-// the invariant that any such groupings be in alphabetical order.
-//
-// etc.
-Expr<V>: () = {
-    ExprOrOr<V> => (),
-    "return" if V !~ ":no_struct:" => (), // FIXME#1
-    "return" ExprOptionalRhs<V> if V !~ ":no_struct:" => (), // FIXME#1
+// - S: if non-empty, include struct expressions
+// - B: if non-empty, include block expressions
+// - L: if non-empty, include stmt-like expressions
+// - T: if non-empty, include expressions ending in a type
+ExprRestricted<S,B,L>: () = {
+    ExprOrOr<S,B,L> => (),
+    "return" if S != "" => (), // FIXME#1
+    "return" ExprOptionalRhs<S,B,L> if S != "" => (), // FIXME#1
     ".." => (),
-    LambdaExpr<V> => (),
-    "move" LambdaExpr<V> => (),
-    ExprOrOr<V> "=" Expr<V> => (),
-    ExprOrOr<V> "<-" Expr<V> => (),
-    ExprOrOr<V> ".." => (),
-    ExprOrOr<V> ".." ExprOptionalRhs<V> => (),
-    ExprOrOr<V> "<<=" Expr<V> => (),
-    ExprOrOr<V> ">>=" Expr<V> => (),
-    ExprOrOr<V> "-=" Expr<V> => (),
-    ExprOrOr<V> "&=" Expr<V> => (),
-    ExprOrOr<V> "|=" Expr<V> => (),
-    ExprOrOr<V> "+=" Expr<V> => (),
-    ExprOrOr<V> "*=" Expr<V> => (),
-    ExprOrOr<V> "/=" Expr<V> => (),
-    ExprOrOr<V> "^=" Expr<V> => (),
-    ExprOrOr<V> "%=" Expr<V> => (),
+    LambdaExpr<S,B,L> => (),
+    "move" LambdaExpr<S,B,L> => (),
+    ExprOrOr<S,B,L> "=" ExprRestricted<S,B,L> => (),
+    ExprOrOr<S,B,L> "<-" ExprRestricted<S,B,L> => (),
+    ExprOrOr<S,B,L> ".." => (),
+    ExprOrOr<S,B,L> ".." ExprOptionalRhs<S,B,L> => (),
+    ExprOrOr<S,B,L> "<<=" ExprRestricted<S,B,L> => (),
+    ExprOrOr<S,B,L> ">>=" ExprRestricted<S,B,L> => (),
+    ExprOrOr<S,B,L> "-=" ExprRestricted<S,B,L> => (),
+    ExprOrOr<S,B,L> "&=" ExprRestricted<S,B,L> => (),
+    ExprOrOr<S,B,L> "|=" ExprRestricted<S,B,L> => (),
+    ExprOrOr<S,B,L> "+=" ExprRestricted<S,B,L> => (),
+    ExprOrOr<S,B,L> "*=" ExprRestricted<S,B,L> => (),
+    ExprOrOr<S,B,L> "/=" ExprRestricted<S,B,L> => (),
+    ExprOrOr<S,B,L> "^=" ExprRestricted<S,B,L> => (),
+    ExprOrOr<S,B,L> "%=" ExprRestricted<S,B,L> => (),
 };
 
-ExprOptionalRhs<V>: () = {
-    Expr<":no_block:,:no_struct:"> if V == ":no_struct:",
-    Expr<V> if V != ":no_struct:" ,
+// When you have an optional RHS, such as in a `..` expression, we
+// can't allow block expressions if we are not allowed struct
+// expressions. So toggle B to "" if S is "". The reason is that
+// otherwise you get an ambiguity:
+//
+//     ... if 0 .. { 22 } ...
+//                 ^~~~~~ body of the if, or RHS of the `..`?
+ExprOptionalRhs<S,B,L>: () = {
+    ExprRestricted<S,"",L> if S == "", // if structs are disabled, disable blocks
+    ExprRestricted<S,B,L> if S != "", // if structs are enabled, pass everything thru
 };
 
-ExprOrOr<V>: () = {
-    ExprAndAnd<V>,
-    ExprOrOr<V> OROR ExprAndAnd<V> => (),
+ExprOrOr<S,B,L>: () = {
+    ExprAndAnd<S,B,L>,
+    ExprOrOr<S,B,L> OROR ExprAndAnd<S,B,L> => (),
 };
 
-ExprAndAnd<V>: () = {
-    ExprEq<V>,
-    ExprAndAnd<V> ANDAND ExprEq<V> => (),
+ExprAndAnd<S,B,L>: () = {
+    ExprEq<S,B,L>,
+    ExprAndAnd<S,B,L> ANDAND ExprEq<S,B,L> => (),
 };
 
-ExprEq<V>: () = {
-    ExprOr<V>,
-    ExprOr<V> EQEQ ExprOr<V> => (),
-    ExprOr<V> NE ExprOr<V> => (),
-    ExprOr<V> "<" ExprOr<V> => (),
-    ExprOr<V> ">" ExprOr<V> => (),
-    ExprOr<V> LE ExprOr<V> => (),
-    ExprOr<V> GE ExprOr<V> => (),
+ExprEq<S,B,L>: () = {
+    ExprSuffix<S,B,L> "as" ty => (), // FIXME#2
+    ExprEqOp<S,B,L,"">,
 };
 
-ExprOr<V>: () = {
-    ExprXor<V>,
-    ExprOr<V> "|1" ExprXor<V> => (),
+ExprEqOp<S,B,L,T>: () = {
+    ExprOr<S,B,L,T>,
+    ExprOr<S,B,L,"T"> EQEQ ExprOr<S,B,L,T> => (),
+    ExprOr<S,B,L,"T"> NE ExprOr<S,B,L,T> => (),
+    ExprOr<S,B,L,""> "<" ExprOr<S,B,L,T> => (),
+    ExprOr<S,B,L,"T"> ">" ExprOr<S,B,L,T> => (),
+    ExprOr<S,B,L,"T"> LE ExprOr<S,B,L,T> => (),
+    ExprOr<S,B,L,"T"> GE ExprOr<S,B,L,T> => (),
 };
 
-ExprXor<V>: () = {
-    ExprAnd<V>,
-    ExprXor<V> "^" ExprAnd<V> => (),
+ExprOr<S,B,L,T>: () = {
+    ExprXor<S,B,L,T>,
+    ExprOr<S,B,L,"T"> "|1" ExprXor<S,B,L,T> => (),
 };
 
-ExprAnd<V>: () = {
-    ExprShift<V>,
-    ExprAnd<V> "&" ExprShift<V> => (),
+ExprXor<S,B,L,T>: () = {
+    ExprAnd<S,B,L,T>,
+    ExprXor<S,B,L,"T"> "^" ExprAnd<S,B,L,T> => (),
 };
 
-ExprShift<V>: () = {
-    ExprPlusMinus<V>,
-    ExprShift<V> SHL ExprPlusMinus<V> => (),
-    ExprShift<V> SHR ExprPlusMinus<V> => (),
+ExprAnd<S,B,L,T>: () = {
+    ExprShift<S,B,L,T>,
+    ExprAnd<S,B,L,"T"> "&" ExprShift<S,B,L,T> => (),
 };
 
-ExprPlusMinus<V>: () = {
-    ExprMulDiv<V>,
-    ExprPlusMinus<V> "+" ExprMulDiv<V> => (),
-    ExprPlusMinus<V> "-" ExprMulDiv<V> => (),
+ExprShift<S,B,L,T>: () = {
+    ExprPlusMinus<S,B,L,T>,
+    ExprShift<S,B,L,""> SHL ExprPlusMinus<S,B,L,""> => (),
+    ExprShift<S,B,L,""> SHR ExprPlusMinus<S,B,L,""> => (),
 };
 
-ExprMulDiv<V>: () = {
-    ExprAs<V>,
-    ExprMulDiv<V> "*" ExprAs<V> => (),
-    ExprMulDiv<V> "/" ExprAs<V> => (),
-    ExprMulDiv<V> "%" ExprAs<V> => (),
+ExprPlusMinus<S,B,L,T>: () = {
+    ExprMulDiv<S,B,L,T>,
+    ExprPlusMinus<S,B,L,"T"> "+" ExprMulDiv<S,B,L,T> => (),
+    ExprPlusMinus<S,B,L,"T"> "-" ExprMulDiv<S,B,L,T> => (),
 };
 
-ExprAs<V>: () = {
-    ExprSuffix<V>,
-    ExprSuffix<V> "as" ty => (),
+ExprMulDiv<S,B,L,T>: () = {
+    ExprAs<S,B,L,T>,
+    ExprMulDiv<S,B,L,"T"> "*" ExprAs<S,B,L,T> => (),
+    ExprMulDiv<S,B,L,"T"> "/" ExprAs<S,B,L,T> => (),
+    ExprMulDiv<S,B,L,"T"> "%" ExprAs<S,B,L,T> => (),
 };
 
-ExprSuffix<V>: () = {
-    ExprAtom<V>,
-    ExprSuffix<V> "." path_generic_args_with_colons => (),
-    ExprSuffix<V> "." LIT_INTEGER => (),
-    ExprSuffix<V> "[" Expression "]" => (),
-    ExprSuffix<V> "(" Comma<Expression> ")" => (),
+ExprAs<S,B,L,T>: () = {
+    ExprSuffix<S,B,L>,
+    ExprSuffix<S,B,L> "as" ty if T != "" => (), // FIXME#2
 };
 
-ExprPrefix<V>: () = {
-    "box" ExprPrefix<V> => (),
-    "-" ExprPrefix<V> => (),
-    "!" ExprPrefix<V> => (),
-    "*" ExprPrefix<V> => (),
-    "&" maybe_mut ExprPrefix<V> => (),
+ExprSuffix<S,B,L>: () = {
+    ExprAtom<S,B,L>,
+    ExprSuffix<S,B,L> "." path_generic_args_with_colons => (),
+    ExprSuffix<S,B,L> "." LIT_INTEGER => (),
+    ExprSuffix<S,B,L> "[" Expr "]" => (),
+    ExprSuffix<S,B,L> "(" Comma<Expr> ")" => (),
 };
 
-ExprAtom<V>: () = {
+ExprPrefix<S,B,L>: () = {
+    "box" ExprPrefix<S,B,L> => (),
+    "-" ExprPrefix<S,B,L> => (),
+    "!" ExprPrefix<S,B,L> => (),
+    "*" ExprPrefix<S,B,L> => (),
+    "&" maybe_mut ExprPrefix<S,B,L> => (),
+};
+
+ExprAtom<S,B,L>: () = {
     lit => (),
     PathExpr => (),
     "self" => (),
     MacroExpr => (),
-    PathExpr "{" struct_expr_fields "}" if V !~ ":no_struct:" => (),
-    "(" Comma<Expression> ")" => (),
-    "[" Comma<Expression> "]" => (),
-    "[" Expression ";" Expression "]" => (),
-    "continue" if V !~ ":no_struct:" => (), // FIXME#1
-    "continue" ident if V !~ ":no_struct:" => (), // FIXME#1
-    "break" if V !~ ":no_struct:" => (), // FIXME#1
-    "break" ident if V !~ ":no_struct:" => (), // FIXME#1
-    expr_qualified_path => (),
-    ExprStmtLike if V !~ ":no_stmtlike:" => (),
-    block if V !~ ":no_block:" => (),
-    ANDAND maybe_mut Expr<V> => (),
+    PathExpr "{" struct_expr_fields "}" if S != "" => (),
+    "(" Comma<Expr> ")" => (),
+    "[" Comma<Expr> "]" => (),
+    "[" Expr ";" Expr "]" => (),
+    "continue" if S != "" => (), // FIXME#1
+    "continue" ident if S != "" => (), // FIXME#1
+    "break" if S != "" => (), // FIXME#1
+    "break" ident if S != "" => (), // FIXME#1
+    Expr_qualified_path => (),
+    ExprStmtLike if L != "" => (),
+    block if B != "" => (),
+    ANDAND maybe_mut ExprRestricted<S,B,L> => (),
 };
 
-expr_qualified_path: () = {
+Expr_qualified_path: () = {
   "<" ty_sum maybe_as_trait_ref ">" "::" ident maybe_qpath_params => (),
   SHL ty_sum maybe_as_trait_ref ">" "::" ident maybe_as_trait_ref ">" "::" ident => (),
   SHL ty_sum maybe_as_trait_ref ">" "::" ident generic_args maybe_as_trait_ref ">" "::" ident => (),
@@ -914,9 +921,9 @@ maybe_as_trait_ref: () = {
   "as" trait_ref => (),
   () => (),
 };
-LambdaExpr<V>: () = {
-    AnyPipe Comma<inferrable_param>? "|1" Expr<V> => (),
-    AnyPipe Comma<inferrable_param>? "|1" "->" ty "{" Expr<V> "}" => (),
+LambdaExpr<S,B,L>: () = {
+    AnyPipe Comma<inferrable_param>? "|1" ExprRestricted<S,B,L> => (),
+    AnyPipe Comma<inferrable_param>? "|1" "->" ty "{" Expr "}" => (),
 };
 struct_expr_fields: () = {
   field_inits => (),
@@ -933,19 +940,19 @@ field_inits: () = {
   field_inits "," field_init => (),
 };
 field_init: () = {
-  ident ":" expr => (),
+  ident ":" Expr => (),
 };
 default_field_init: () = {
-  ".." expr => (),
+  ".." Expr => (),
 };
 ExprStmtLike: () = {
-  expr_match => (),
-  expr_if => (),
-  expr_if_let => (),
-  expr_while => (),
-  expr_while_let => (),
-  expr_loop => (),
-  expr_for => (),
+  Expr_match => (),
+  Expr_if => (),
+  Expr_if_let => (),
+  Expr_while => (),
+  Expr_while_let => (),
+  Expr_loop => (),
+  Expr_for => (),
   "unsafe" block => (),
   PathExpr "!" ident? braces_delimited_token_trees => (),
 };
@@ -956,7 +963,7 @@ ExprStmtLikeSuffix: () = {
   ExprStmtLikeSuffix "." path_generic_args_with_colons "(" maybe_exprs ")" => (),
   ExprStmtLikeSuffix "." LIT_INTEGER => (),
 };
-expr_match: () = {
+Expr_match: () = {
   "match" ExprNoStruct "{" "}" => (),
   "match" ExprNoStruct "{" match_clauses "}" => (),
   "match" ExprNoStruct "{" match_clauses nonblock_match_clause "}" => (),
@@ -982,29 +989,29 @@ maybe_guard: () = {
   "if" ExprNoStruct => (),
   () => (),
 };
-expr_if: () = {
+Expr_if: () = {
   "if" ExprNoStruct block => (),
   "if" ExprNoStruct block "else" block_or_if => (),
 };
-expr_if_let: () = {
+Expr_if_let: () = {
   "if" "let" Pat "=" ExprNoStruct block => (),
   "if" "let" Pat "=" ExprNoStruct block "else" block_or_if => (),
 };
 block_or_if: () = {
   block => (),
-  expr_if => (),
-  expr_if_let => (),
+  Expr_if => (),
+  Expr_if_let => (),
 };
-expr_while: () = {
+Expr_while: () = {
   maybe_label "while" ExprNoStruct block => (),
 };
-expr_while_let: () = {
+Expr_while_let: () = {
   maybe_label "while" "let" Pat "=" ExprNoStruct block => (),
 };
-expr_loop: () = {
+Expr_loop: () = {
   maybe_label "loop" block => (),
 };
-expr_for: () = {
+Expr_for: () = {
   maybe_label "for" Pat "in" ExprNoStruct block => (),
 };
 maybe_label: () = {
