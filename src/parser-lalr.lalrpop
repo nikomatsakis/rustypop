@@ -23,79 +23,88 @@
 
 grammar;
 
-pub crate: () = {
-  shebang? inner_attr* mod_item* => (),
+pub Crate: () = {
+  Shebang? InnerAttr* ModItem* => (),
 };
-shebang: () = {
-  SHEBANG_LINE => (),
+
+Shebang: () = {
+    SHEBANG_LINE => (),
 };
-inner_attr: () = {
-  SHEBANG "[" meta_item "]" => (),
-  INNER_DOC_COMMENT => (),
+
+InnerAttr: () = {
+    SHEBANG "[" MetaItem "]" => (),
+    INNER_DOC_COMMENT => (),
 };
-maybe_outer_attrs: () = {
-  outer_attrs => (),
-  () => (),
+
+MaybeOuterAttrs: () = {
+    OuterAttrs? => ()
 };
-outer_attrs: () = {
-  outer_attr => (),
-  outer_attrs outer_attr => (),
+
+OuterAttrs: () = {
+    OuterAttr => (),
+    OuterAttrs OuterAttr => (),
 };
-outer_attr: () = {
-  "#" "[" meta_item "]" => (),
-  OUTER_DOC_COMMENT => (),
+
+OuterAttr: () = {
+    "#" "[" MetaItem "]" => (),
+    OUTER_DOC_COMMENT => (),
 };
-meta_item: () = {
-  ident => (),
-  ident "=" lit => (),
-  ident "(" Comma<meta_item> ")" => (),
+
+MetaItem: () = {
+    ident => (),
+    ident "=" lit => (),
+    ident "(" Comma<MetaItem> ")" => (),
 };
-meta_seq: () = {
-  () => (),
-  meta_item => (),
-  meta_seq "," meta_item => (),
+
+AttrsAndVis: () = {
+    MaybeOuterAttrs visibility => (),
 };
-attrs_and_vis: () = {
-  maybe_outer_attrs visibility => (),
+
+ModItem: () = {
+    AttrsAndVis item => (),
 };
-mod_item: () = {
-  attrs_and_vis item => (),
-};
+
 item: () = {
-  stmt_item => (),
-  item_macro => (),
+  StmtItem => (),
+  ItemMacro => (),
 };
-stmt_item: () = {
-  item_static => (),
-  item_const => (),
-  item_type => (),
-  block_item => (),
-  view_item => (),
+
+StmtItem: () = {
+  ItemStatic => (),
+  ItemConst => (),
+  ItemType => (),
+  BlockItem => (),
+  ViewItem => (),
 };
-item_static: () = {
-  "static" ident ":" ty "=" Expr ";" => (),
-  "static" "mut" ident ":" ty "=" Expr ";" => (),
+
+ItemStatic: () = {
+    "static" "mut"? ident ":" ty "=" Expr ";" => (),
 };
-item_const: () = {
-  "const" ident ":" ty "=" Expr ";" => (),
+
+ItemConst: () = {
+    "const" ident ":" ty "=" Expr ";" => (),
 };
-item_macro: () = {
-  PathExpr "!" ident? parens_delimited_token_trees ";" => (),
-  PathExpr "!" ident? braces_delimited_token_trees => (),
-  PathExpr "!" ident? brackets_delimited_token_trees ";" => (),
+
+ItemMacro: () = {
+    PathExpr "!" ident? parens_delimited_token_trees ";" => (),
+    PathExpr "!" ident? braces_delimited_token_trees => (),
+    PathExpr "!" ident? brackets_delimited_token_trees ";" => (),
 };
-view_item: () = {
-  use_item => (),
-  extern_fn_item => (),
-  "extern" "crate" ident ";" => (),
-  "extern" "crate" ident "as" ident ";" => (),
+
+ViewItem: () = {
+    ItemUse => (),
+    ExternFnItem => (),
+    "extern" "crate" ident ("as" ident)? ";" => (),
 };
-extern_fn_item: () = {
+
+ExternFnItem: () = {
   "extern" abi? item_fn => (),
 };
-use_item: () = {
-  "use" view_path ";" => (),
+
+ItemUse: () = {
+    "use" view_path ";" => (),
 };
+
 view_path: () = {
   path_no_types_allowed => (),
   path_no_types_allowed "::" "{" "}" => (),
@@ -110,7 +119,7 @@ view_path: () = {
   "{" idents_or_self "," "}" => (),
   path_no_types_allowed "as" ident => (),
 };
-block_item: () = {
+BlockItem: () = {
   item_fn => (),
   item_unsafe_fn => (),
   item_mod => (),
@@ -147,14 +156,14 @@ struct_decl_fields: () = {
   () => (),
 };
 struct_decl_field: () = {
-  attrs_and_vis ident ":" ty_sum => (),
+  AttrsAndVis ident ":" ty_sum => (),
 };
 struct_tuple_fields: () = {
   struct_tuple_field => (),
   struct_tuple_fields "," struct_tuple_field => (),
 };
 struct_tuple_field: () = {
-  attrs_and_vis ty_sum => (),
+  AttrsAndVis ty_sum => (),
 };
 item_enum: () = {
   "enum" ident generic_params maybe_where_clause "{" enum_defs "}" => (),
@@ -166,7 +175,7 @@ enum_defs: () = {
   () => (),
 };
 enum_def: () = {
-  attrs_and_vis ident enum_args => (),
+  AttrsAndVis ident enum_args => (),
 };
 enum_args: () = {
   "{" struct_decl_fields "}" => (),
@@ -177,18 +186,18 @@ enum_args: () = {
 };
 item_mod: () = {
   "mod" ident ";" => (),
-  "mod" ident "{" inner_attr* mod_item* "}" => (),
+  "mod" ident "{" InnerAttr* ModItem* "}" => (),
 };
 item_foreign_mod: () = {
-  "extern" abi? "{" inner_attr* foreign_item* "}" => (),
+  "extern" abi? "{" InnerAttr* ForeignItem* "}" => (),
 };
 abi: () = {
   str => (),
 };
-foreign_item: () = {
-  attrs_and_vis "static" item_foreign_static => (),
-  attrs_and_vis item_foreign_fn => (),
-  attrs_and_vis "unsafe" item_foreign_fn => (),
+ForeignItem: () = {
+  AttrsAndVis "static" item_foreign_static => (),
+  AttrsAndVis item_foreign_fn => (),
+  AttrsAndVis "unsafe" item_foreign_fn => (),
 };
 item_foreign_static: () = {
   "mut"? ident ":" ty ";" => (),
@@ -218,7 +227,7 @@ ident_or_self: () = {
   ident => (),
   "self" => (),
 };
-item_type: () = {
+ItemType: () = {
   "type" ident generic_params maybe_where_clause "=" ty_sum ";" => (),
 };
 for_sized: () = {
@@ -243,14 +252,14 @@ trait_item: () = {
   trait_method => (),
 };
 trait_const: () = {
-  maybe_outer_attrs "const" ident maybe_ty_ascription maybe_const_default ";" => (),
+  MaybeOuterAttrs "const" ident maybe_ty_ascription maybe_const_default ";" => (),
 };
 maybe_const_default: () = {
   "=" Expr => (),
   () => (),
 };
 trait_type: () = {
-  maybe_outer_attrs "type" ty_param ";" => (),
+  MaybeOuterAttrs "type" ty_param ";" => (),
 };
 maybe_unsafe: () = {
   "unsafe" => (),
@@ -261,22 +270,22 @@ trait_method: () = {
   method => (),
 };
 type_method: () = {
-  attrs_and_vis maybe_unsafe "fn" ident generic_params fn_decl_with_self_allow_anon_params maybe_where_clause ";" => (),
-  attrs_and_vis maybe_unsafe "extern" abi? "fn" ident generic_params fn_decl_with_self_allow_anon_params maybe_where_clause ";" => (),
+  AttrsAndVis maybe_unsafe "fn" ident generic_params fn_decl_with_self_allow_anon_params maybe_where_clause ";" => (),
+  AttrsAndVis maybe_unsafe "extern" abi? "fn" ident generic_params fn_decl_with_self_allow_anon_params maybe_where_clause ";" => (),
 };
 method: () = {
-  attrs_and_vis maybe_unsafe "fn" ident generic_params fn_decl_with_self_allow_anon_params maybe_where_clause inner_attrs_and_block => (),
-  attrs_and_vis maybe_unsafe "extern" abi? "fn" ident generic_params fn_decl_with_self_allow_anon_params maybe_where_clause inner_attrs_and_block => (),
+  AttrsAndVis maybe_unsafe "fn" ident generic_params fn_decl_with_self_allow_anon_params maybe_where_clause InnerAttrs_and_block => (),
+  AttrsAndVis maybe_unsafe "extern" abi? "fn" ident generic_params fn_decl_with_self_allow_anon_params maybe_where_clause InnerAttrs_and_block => (),
 };
 impl_method: () = {
-  attrs_and_vis maybe_unsafe "fn" ident generic_params fn_decl_with_self maybe_where_clause inner_attrs_and_block => (),
-  attrs_and_vis maybe_unsafe "extern" abi? "fn" ident generic_params fn_decl_with_self maybe_where_clause inner_attrs_and_block => (),
+  AttrsAndVis maybe_unsafe "fn" ident generic_params fn_decl_with_self maybe_where_clause InnerAttrs_and_block => (),
+  AttrsAndVis maybe_unsafe "extern" abi? "fn" ident generic_params fn_decl_with_self maybe_where_clause InnerAttrs_and_block => (),
 };
 item_impl: () = {
-  maybe_unsafe "impl" generic_params ty_prim_sum maybe_where_clause "{" inner_attr* maybe_impl_items "}" => (),
-  maybe_unsafe "impl" generic_params "(" ty ")" maybe_where_clause "{" inner_attr* maybe_impl_items "}" => (),
-  maybe_unsafe "impl" generic_params trait_ref "for" ty_sum maybe_where_clause "{" inner_attr* maybe_impl_items "}" => (),
-  maybe_unsafe "impl" generic_params "!" trait_ref "for" ty_sum maybe_where_clause "{" inner_attr* maybe_impl_items "}" => (),
+  maybe_unsafe "impl" generic_params ty_prim_sum maybe_where_clause "{" InnerAttr* maybe_impl_items "}" => (),
+  maybe_unsafe "impl" generic_params "(" ty ")" maybe_where_clause "{" InnerAttr* maybe_impl_items "}" => (),
+  maybe_unsafe "impl" generic_params trait_ref "for" ty_sum maybe_where_clause "{" InnerAttr* maybe_impl_items "}" => (),
+  maybe_unsafe "impl" generic_params "!" trait_ref "for" ty_sum maybe_where_clause "{" InnerAttr* maybe_impl_items "}" => (),
   maybe_unsafe "impl" generic_params trait_ref "for" ".." "{" "}" => (),
   maybe_unsafe "impl" generic_params "!" trait_ref "for" ".." "{" "}" => (),
 };
@@ -290,22 +299,22 @@ impl_items: () = {
 };
 impl_item: () = {
   impl_method => (),
-  attrs_and_vis item_macro => (),
+  AttrsAndVis ItemMacro => (),
   impl_const => (),
   impl_type => (),
 };
 impl_const: () = {
-  attrs_and_vis item_const => (),
+  AttrsAndVis ItemConst => (),
 };
 impl_type: () = {
-  attrs_and_vis "type" ident generic_params "=" ty_sum ";" => (),
+  AttrsAndVis "type" ident generic_params "=" ty_sum ";" => (),
 };
 item_fn: () = {
-  "fn" ident generic_params fn_decl maybe_where_clause inner_attrs_and_block => (),
+  "fn" ident generic_params fn_decl maybe_where_clause InnerAttrs_and_block => (),
 };
 item_unsafe_fn: () = {
-  "unsafe" "fn" ident generic_params fn_decl maybe_where_clause inner_attrs_and_block => (),
-  "unsafe" "extern" abi? "fn" ident generic_params fn_decl maybe_where_clause inner_attrs_and_block => (),
+  "unsafe" "fn" ident generic_params fn_decl maybe_where_clause InnerAttrs_and_block => (),
+  "unsafe" "extern" abi? "fn" ident generic_params fn_decl maybe_where_clause InnerAttrs_and_block => (),
 };
 fn_decl: () = {
   fn_params ret_ty => (),
@@ -663,8 +672,8 @@ lifetime: () = {
 trait_ref: () = {
   Path<Epsilon> => (),
 };
-inner_attrs_and_block: () = {
-  "{" inner_attr* maybe_stmts "}" => (),
+InnerAttrs_and_block: () = {
+  "{" InnerAttr* maybe_stmts "}" => (),
 };
 block: () = {
   "{" maybe_stmts "}" => (),
@@ -681,10 +690,10 @@ stmts: () = {
 };
 stmt: () = {
   let => (),
-  stmt_item => (),
-  "pub" stmt_item => (),
-  outer_attrs stmt_item => (),
-  outer_attrs "pub" stmt_item => (),
+  StmtItem => (),
+  "pub" StmtItem => (),
+  OuterAttrs StmtItem => (),
+  OuterAttrs "pub" StmtItem => (),
   ExprStmtLike => (),
   block => (),
   ExprNoStmtLike ";" => (),
@@ -927,11 +936,11 @@ match_clause: () = {
   block_match_clause "," => (),
 };
 nonblock_match_clause: () = {
-  maybe_outer_attrs pats_or maybe_guard "=>" ExprNoStmtLike => (),
-  maybe_outer_attrs pats_or maybe_guard "=>" ExprStmtLikeSuffix => (),
+  MaybeOuterAttrs pats_or maybe_guard "=>" ExprNoStmtLike => (),
+  MaybeOuterAttrs pats_or maybe_guard "=>" ExprStmtLikeSuffix => (),
 };
 block_match_clause: () = {
-  maybe_outer_attrs pats_or maybe_guard "=>" block => (),
+  MaybeOuterAttrs pats_or maybe_guard "=>" block => (),
 };
 maybe_guard: () = {
   "if" ExprNoStruct => (),
