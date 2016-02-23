@@ -21,7 +21,7 @@
 // to fix this I have to propagate the restrictions against type
 // arguments into the Ty grammar.
 
-grammar["LALR(1)"];
+grammar;
 
 pub crate: () = {
   shebang? inner_attr* mod_item* => (),
@@ -819,7 +819,7 @@ ExprMulDiv<S,B,L,T>: () = {
 };
 
 ExprAs<S,B,L,T>: () = {
-    ExprSuffix<S,B,L> if T == "" => (), // FIXME#2
+    ExprSuffix<S,B,L> => (),
     ExprSuffix<S,B,L> "as" ty if T != "" => (), // FIXME#2
 };
 
