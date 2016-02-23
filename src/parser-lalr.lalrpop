@@ -802,7 +802,7 @@ ExprAnd<S,B,L,T>: () = {
 ExprShift<S,B,L,T>: () = {
     ExprPlusMinus<S,B,L,T>,
     ExprShift<S,B,L,""> "<[<]" "<[]" ExprPlusMinus<S,B,L,""> => (),
-    ExprShift<S,B,L,""> ">[>]" ">[]" ExprPlusMinus<S,B,L,""> => (),
+    ExprShift<S,B,L,"T"> ">[>]" ">[]" ExprPlusMinus<S,B,L,""> => (),
 };
 
 ExprPlusMinus<S,B,L,T>: () = {
