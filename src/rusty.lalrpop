@@ -779,12 +779,11 @@ ExprAndAnd<S,B,L>: () = {
 };
 
 ExprEq<S,B,L>: () = {
-    ExprSuffix<S,B,L> "as" ty => (), // FIXME#2
     ExprEqOp<S,B,L>,
 };
 
 ExprEqOp<S,B,L>: () = {
-    ExprOr<S,B,L,"">,
+    ExprOr<S,B,L,"T">,
     ExprOr<S,B,L,"T"> "==" ExprOr<S,B,L,""> => (),
     ExprOr<S,B,L,"T"> "!=" ExprOr<S,B,L,""> => (),
     ExprOr<S,B,L,""> "<[]" ExprOr<S,B,L,""> => (),
