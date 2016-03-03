@@ -52,7 +52,7 @@ OuterAttr: () = {
 
 MetaItem: () = {
     Ident,
-    Ident "=" lit,
+    Ident "=" Lit,
     Ident "(" Comma<MetaItem> ")",
 };
 
@@ -98,7 +98,7 @@ ViewItem: () = {
 };
 
 ExternFnItem: () = {
-    "extern" abi? ItemFn,
+    "extern" Abi ItemFn,
 };
 
 ItemUse: () = {
@@ -168,35 +168,36 @@ struct_tuple_fields: () = {
 struct_tuple_field: () = {
   AttrsAndVis TySum,
 };
+
 item_enum: () = {
-  "enum" Ident GenericParams MaybeWhereClause "{" enum_defs "}",
-  "enum" Ident GenericParams MaybeWhereClause "{" enum_defs "," "}",
+    "enum" Ident GenericParams MaybeWhereClause "{" Comma1<EnumDef> "}",
 };
-enum_defs: () = {
-  enum_def,
-  enum_defs "," enum_def,
-  (),
+
+EnumDef: () = {
+    AttrsAndVis Ident EnumArgs
 };
-enum_def: () = {
-  AttrsAndVis Ident enum_args,
+
+EnumArgs: () = {
+    "{" struct_decl_fields "}",
+    "{" struct_decl_fields "," "}",
+    "(" MaybeTySums ")",
+    "=" Expr,
+    (),
 };
-enum_args: () = {
-  "{" struct_decl_fields "}",
-  "{" struct_decl_fields "," "}",
-  "(" MaybeTySums ")",
-  "=" Expr,
-  (),
-};
+
 ItemMod: () = {
   "mod" Ident ";",
   "mod" Ident "{" InnerAttr* ModItem* "}",
 };
+
 ItemForeignMod: () = {
-  "extern" abi? "{" InnerAttr* ForeignItem* "}",
+  "extern" Abi "{" InnerAttr* ForeignItem* "}",
 };
-abi: () = {
-  str,
+
+Abi: () = {
+  StringLiteral?
 };
+
 ForeignItem: () = {
   AttrsAndVis "static" item_foreign_static,
   AttrsAndVis item_foreign_fn,
@@ -274,15 +275,15 @@ trait_method: () = {
 };
 type_method: () = {
   AttrsAndVis Maybeunsafe "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause ";",
-  AttrsAndVis Maybeunsafe "extern" abi? "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause ";",
+  AttrsAndVis Maybeunsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause ";",
 };
 method: () = {
   AttrsAndVis Maybeunsafe "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause InnerAttrs_and_block,
-  AttrsAndVis Maybeunsafe "extern" abi? "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause InnerAttrs_and_block,
+  AttrsAndVis Maybeunsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause InnerAttrs_and_block,
 };
 impl_method: () = {
   AttrsAndVis Maybeunsafe "fn" Ident GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
-  AttrsAndVis Maybeunsafe "extern" abi? "fn" Ident GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
+  AttrsAndVis Maybeunsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
 };
 item_impl: () = {
   Maybeunsafe "impl" GenericParams ty_prim_sum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
@@ -317,7 +318,7 @@ ItemFn: () = {
 };
 ItemUnsafeFn: () = {
   "unsafe" "fn" Ident GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
-  "unsafe" "extern" abi? "fn" Ident GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
+  "unsafe" "extern" Abi "fn" Ident GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
 };
 fn_decl: () = {
   fn_params RetTy,
@@ -459,8 +460,8 @@ PatWithBindingMode<BM>: () = {
     AnyAmp "mut" Pat,
     "(" Comma<Pat> ")",
     "[" PatVec "]",
-    lit_or_path,
-    lit_or_path "..." lit_or_path,
+    LitOrPath,
+    LitOrPath "..." LitOrPath,
     PathExpr "{" PatStruct "}",
     PathExpr "(" ".." ")",
     PathExpr "(" Comma<Pat> ")",
@@ -483,10 +484,10 @@ RefBindingMode: () = {
     "ref",
     "ref" "mut",
 };
-lit_or_path: () = {
+LitOrPath: () = {
   PathExpr,
-  lit,
-  "-" lit,
+  Lit,
+  "-" Lit,
 };
 PatField: () = {
   Ident,
@@ -549,8 +550,8 @@ ty_prim: () = {
 ty_bare_fn: () = {
   "fn" ty_fn_decl,
   "unsafe" "fn" ty_fn_decl,
-  "extern" abi? "fn" ty_fn_decl,
-  "unsafe" "extern" abi? "fn" ty_fn_decl,
+  "extern" Abi "fn" ty_fn_decl,
+  "unsafe" "extern" Abi "fn" ty_fn_decl,
 };
 ty_fn_decl: () = {
   GenericParams fn_anon_params RetTy,
@@ -829,7 +830,7 @@ ExprPrefix<S,B,L>: () = {
 };
 
 ExprAtom<S,B,L>: () = {
-    lit,
+    Lit,
     PathExpr,
     "self",
     MacroExpr,
@@ -928,45 +929,54 @@ Maybeguard: () = {
 };
 ExprIf: () = {
   "if" ExprNoStruct block,
-  "if" ExprNoStruct block "else" block_or_if,
+  "if" ExprNoStruct block "else" BlockOrIf,
 };
 ExprIfLet: () = {
   "if" "let" Pat "=" ExprNoStruct block,
-  "if" "let" Pat "=" ExprNoStruct block "else" block_or_if,
+  "if" "let" Pat "=" ExprNoStruct block "else" BlockOrIf,
 };
-block_or_if: () = {
+
+BlockOrIf: () = {
   block,
   ExprIf,
   ExprIfLet,
 };
+
 ExprWhile: () = {
   MaybeLabel "while" ExprNoStruct block,
 };
+
 ExprWhileLet: () = {
   MaybeLabel "while" "let" Pat "=" ExprNoStruct block,
 };
+
 ExprLoop: () = {
   MaybeLabel "loop" block,
 };
+
 ExprFor: () = {
   MaybeLabel "for" Pat "in" ExprNoStruct block,
 };
+
 MaybeLabel: () = {
     (Lifetime ":")?
 };
+
 Let: () = {
-  "let" Pat MaybeTyAscription MaybeInitExpr ";",
+    "let" Pat MaybeTyAscription MaybeInitExpr ";",
 };
-lit: () = {
-  LIT_BYTE,
-  LIT_CHAR,
-  LIT_INTEGER,
-  LIT_FLOAT,
-  "true",
-  "false",
-  str,
+
+Lit: () = {
+    LIT_BYTE,
+    LIT_CHAR,
+    LIT_INTEGER,
+    LIT_FLOAT,
+    "true",
+    "false",
+    StringLiteral,
 };
-str: () = {
+
+StringLiteral: () = {
   LIT_STR,
   LIT_STR_RAW,
   LIT_BYTE_STR,
