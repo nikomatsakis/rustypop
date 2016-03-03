@@ -132,7 +132,7 @@ BlockItem: () = {
 };
 
 MaybeTyAscription: () = {
-  (":" ty_sum)?
+  (":" TySum)?
 };
 
 MaybeInitExpr: () = {
@@ -159,14 +159,14 @@ struct_decl_fields: () = {
   (),
 };
 struct_decl_field: () = {
-  AttrsAndVis Ident ":" ty_sum,
+  AttrsAndVis Ident ":" TySum,
 };
 struct_tuple_fields: () = {
   struct_tuple_field,
   struct_tuple_fields "," struct_tuple_field,
 };
 struct_tuple_field: () = {
-  AttrsAndVis ty_sum,
+  AttrsAndVis TySum,
 };
 item_enum: () = {
   "enum" Ident GenericParams MaybeWhereClause "{" enum_defs "}",
@@ -183,7 +183,7 @@ enum_def: () = {
 enum_args: () = {
   "{" struct_decl_fields "}",
   "{" struct_decl_fields "," "}",
-  "(" Maybety_sums ")",
+  "(" MaybeTySums ")",
   "=" Expr,
   (),
 };
@@ -231,7 +231,7 @@ IdentOrSelf: () = {
   "self",
 };
 ItemType: () = {
-  "type" Ident GenericParams MaybeWhereClause "=" ty_sum ";",
+  "type" Ident GenericParams MaybeWhereClause "=" TySum ";",
 };
 for_sized: () = {
   "for" "?" Ident,
@@ -287,10 +287,10 @@ impl_method: () = {
 item_impl: () = {
   Maybeunsafe "impl" GenericParams ty_prim_sum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
   Maybeunsafe "impl" GenericParams "(" ty ")" MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
-  Maybeunsafe "impl" GenericParams trait_ref "for" ty_sum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
-  Maybeunsafe "impl" GenericParams "!" trait_ref "for" ty_sum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
-  Maybeunsafe "impl" GenericParams trait_ref "for" ".." "{" "}",
-  Maybeunsafe "impl" GenericParams "!" trait_ref "for" ".." "{" "}",
+  Maybeunsafe "impl" GenericParams TraitRef "for" TySum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
+  Maybeunsafe "impl" GenericParams "!" TraitRef "for" TySum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
+  Maybeunsafe "impl" GenericParams TraitRef "for" ".." "{" "}",
+  Maybeunsafe "impl" GenericParams "!" TraitRef "for" ".." "{" "}",
 };
 Maybeimpl_items: () = {
   impl_items,
@@ -310,7 +310,7 @@ impl_const: () = {
   AttrsAndVis ItemConst,
 };
 impl_type: () = {
-  AttrsAndVis "type" Ident GenericParams "=" ty_sum ";",
+  AttrsAndVis "type" Ident GenericParams "=" TySum ";",
 };
 ItemFn: () = {
   "fn" Ident GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
@@ -357,7 +357,7 @@ params: () = {
   params "," param,
 };
 param: () = {
-  Pat ":" ty_sum,
+  Pat ":" TySum,
 };
 inferrable_param: () = {
   Pat MaybeTyAscription,
@@ -424,8 +424,6 @@ ForLifetimes: () = {
   "for" TyLt Lifetimes TyGt,
 };
 
-TyParams: () = Comma1<TyParam>;
-
 PathNoTypes: () = {
   Ident,
   "::" Ident,
@@ -434,15 +432,15 @@ PathNoTypes: () = {
   PathNoTypes "::" Ident,
 };
 GenericArgs: () = {
-  TyLt generic_values TyGt,
+  TyLt GenericValues TyGt,
 };
-generic_values: () = {
-  MaybeLifetimes Maybety_sums_and_or_bindings,
+GenericValues: () = {
+  MaybeLifetimes MaybeTySumsAndOrBindings,
 };
-Maybety_sums_and_or_bindings: () = {
-  ty_sums,
-  ty_sums ",",
-  ty_sums "," bindings,
+MaybeTySumsAndOrBindings: () = {
+  TySums,
+  TySums ",",
+  TySums "," bindings,
   bindings,
   bindings ",",
   (),
@@ -471,7 +469,7 @@ PatWithBindingMode<BM>: () = {
     Ident "@" Pat,
     BM Ident "@" Pat,
     "box" Pat,
-    TyLt ty_sum Maybeas_trait_ref TyGt "::" Ident,
+    TyLt TySum MaybeAsTraitRef TyGt "::" Ident,
 };
 pats_or: () = {
   Pat,
@@ -528,9 +526,9 @@ PatVec_elts: () = {
 };
 ty: () = {
   ty_prim,
-  TyLt ty_sum Maybeas_trait_ref TyGt "::" Ident,
-  "(" ty_sums ")",
-  "(" ty_sums "," ")",
+  TyLt TySum MaybeAsTraitRef TyGt "::" Ident,
+  "(" TySums ")",
+  "(" TySums "," ")",
   "(" ")",
 };
 ty_prim: () = {
@@ -562,30 +560,30 @@ for_in_type: () = {
 };
 for_in_type_suffix: () = {
   ty_bare_fn,
-  trait_ref,
+  TraitRef,
 };
 mut_or_const: () = {
   "mut",
   "const",
 };
-ty_qualified_path_and_generic_values: () = {
+ty_qualified_path_and_GenericValues: () = {
   ty_qualified_path Maybebindings,
-  ty_qualified_path "," ty_sums Maybebindings,
+  ty_qualified_path "," TySums Maybebindings,
 };
 ty_qualified_path: () = {
-  ty_sum "as" trait_ref TyGt "::" Ident,
-  ty_sum "as" trait_ref TyGt "::" Ident "+" ty_param_bounds,
+  TySum "as" TraitRef TyGt "::" Ident,
+  TySum "as" TraitRef TyGt "::" Ident "+" ty_param_bounds,
 };
-Maybety_sums: () = {
-  ty_sums,
-  ty_sums ",",
+MaybeTySums: () = {
+  TySums,
+  TySums ",",
   (),
 };
-ty_sums: () = {
-  ty_sum,
-  ty_sums "," ty_sum,
+TySums: () = {
+  TySum,
+  TySums "," TySum,
 };
-ty_sum: () = {
+TySum: () = {
   ty,
   ty "+" ty_param_bounds,
 };
@@ -630,7 +628,7 @@ bounds: () = {
 };
 bound: () = {
   Lifetime,
-  trait_ref,
+  TraitRef,
 };
 MaybeLifetimeBounds: () = {
     (":" LifetimeBounds)?
@@ -640,7 +638,7 @@ LifetimeBounds: () = {
     LifetimeBounds "+" Lifetime,
 };
 MaybeTyDefault: () = {
-    ("=" ty_sum)?
+    ("=" TySum)?
 };
 MaybeLifetimes: () = Comma<LifetimeAndBounds>;
 Lifetimes: () = Comma1<LifetimeAndBounds>;
@@ -652,7 +650,7 @@ Lifetime: () = {
   LIFETIME,
   "'static",
 };
-trait_ref: () = {
+TraitRef: () = {
   Path<Epsilon>,
 };
 InnerAttrs_and_block: () = {
@@ -849,16 +847,16 @@ ExprAtom<S,B,L>: () = {
 };
 
 Expr_qualified_path: () = {
-  TyLt ty_sum Maybeas_trait_ref TyGt "::" Ident Maybeqpath_params,
+  TyLt TySum MaybeAsTraitRef TyGt "::" Ident Maybeqpath_params,
 };
 
 Maybeqpath_params: () = {
   "::" GenericArgs,
   (),
 };
-Maybeas_trait_ref: () = {
-  "as" trait_ref,
-  (),
+
+MaybeAsTraitRef: () = {
+    ("as" TraitRef)?
 };
 
 LambdaExpr<S,B,L>: () = {
