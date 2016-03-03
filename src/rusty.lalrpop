@@ -126,50 +126,50 @@ BlockItem: () = {
   ItemMod,
   ItemForeignMod,
   ItemStruct,
-  item_enum,
-  item_trait,
+  ItemEnum,
+  ItemTrait,
   item_impl,
 };
 
 MaybeTyAscription: () = {
-  (":" TySum)?
+    (":" TySum)?
 };
 
 MaybeInitExpr: () = {
-  ("=" Expr)?
+    ("=" Expr)?
 };
 
 ItemStruct: () = {
-  "struct" Ident GenericParams MaybeWhereClause struct_decl_args,
-  "struct" Ident GenericParams struct_tuple_args MaybeWhereClause ";",
+  "struct" Ident GenericParams MaybeWhereClause StructDeclArgs,
+  "struct" Ident GenericParams StructTupleArgs MaybeWhereClause ";",
   "struct" Ident GenericParams MaybeWhereClause ";",
 };
 
-struct_decl_args: () = {
-  "{" struct_decl_fields "}",
-  "{" struct_decl_fields "," "}",
-};
-struct_tuple_args: () = {
-  "(" struct_tuple_fields ")",
-  "(" struct_tuple_fields "," ")",
-};
-struct_decl_fields: () = {
-  struct_decl_field,
-  struct_decl_fields "," struct_decl_field,
-  (),
-};
-struct_decl_field: () = {
-  AttrsAndVis Ident ":" TySum,
-};
-struct_tuple_fields: () = {
-  struct_tuple_field,
-  struct_tuple_fields "," struct_tuple_field,
-};
-struct_tuple_field: () = {
-  AttrsAndVis TySum,
+StructDeclArgs: () = {
+    "{" StructDeclFields "}"
 };
 
-item_enum: () = {
+StructTupleArgs: () = {
+    "(" StructTupleFields ")"
+};
+
+StructDeclFields: () = {
+    Comma<StructDeclField>,
+};
+
+StructDeclField: () = {
+  AttrsAndVis Ident ":" TySum,
+};
+
+StructTupleFields: () = {
+    Comma<StructTupleField>
+};
+
+StructTupleField: () = {
+    AttrsAndVis TySum,
+};
+
+ItemEnum: () = {
     "enum" Ident GenericParams MaybeWhereClause "{" Comma1<EnumDef> "}",
 };
 
@@ -178,8 +178,7 @@ EnumDef: () = {
 };
 
 EnumArgs: () = {
-    "{" struct_decl_fields "}",
-    "{" struct_decl_fields "," "}",
+    "{" StructDeclFields "}",
     "(" MaybeTySums ")",
     "=" Expr,
     (),
@@ -234,23 +233,13 @@ IdentOrSelf: () = {
 ItemType: () = {
   "type" Ident GenericParams MaybeWhereClause "=" TySum ";",
 };
-for_sized: () = {
-  "for" "?" Ident,
-  "for" Ident "?",
-  (),
+ItemTrait: () = {
+    MaybeUnsafe "trait" Ident GenericParams MaybeTyParamBounds MaybeWhereClause
+        "{"
+        TraitItem*
+        "}",
 };
-item_trait: () = {
-  Maybeunsafe "trait" Ident GenericParams for_sized MaybeTyParamBounds MaybeWhereClause "{" Maybetrait_items "}",
-};
-Maybetrait_items: () = {
-  trait_items,
-  (),
-};
-trait_items: () = {
-  trait_item,
-  trait_items trait_item,
-};
-trait_item: () = {
+TraitItem: () = {
   trait_const,
   trait_type,
   trait_method,
@@ -265,33 +254,32 @@ Maybeconst_default: () = {
 trait_type: () = {
   MaybeOuterAttrs "type" TyParam ";",
 };
-Maybeunsafe: () = {
-  "unsafe",
-  (),
+MaybeUnsafe: () = {
+    "unsafe"?
 };
 trait_method: () = {
   type_method,
   method,
 };
 type_method: () = {
-  AttrsAndVis Maybeunsafe "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause ";",
-  AttrsAndVis Maybeunsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause ";",
+  AttrsAndVis MaybeUnsafe "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause ";",
+  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause ";",
 };
 method: () = {
-  AttrsAndVis Maybeunsafe "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause InnerAttrs_and_block,
-  AttrsAndVis Maybeunsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause InnerAttrs_and_block,
+  AttrsAndVis MaybeUnsafe "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause InnerAttrs_and_block,
+  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause InnerAttrs_and_block,
 };
 impl_method: () = {
-  AttrsAndVis Maybeunsafe "fn" Ident GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
-  AttrsAndVis Maybeunsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
+  AttrsAndVis MaybeUnsafe "fn" Ident GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
+  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
 };
 item_impl: () = {
-  Maybeunsafe "impl" GenericParams ty_prim_sum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
-  Maybeunsafe "impl" GenericParams "(" ty ")" MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
-  Maybeunsafe "impl" GenericParams TraitRef "for" TySum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
-  Maybeunsafe "impl" GenericParams "!" TraitRef "for" TySum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
-  Maybeunsafe "impl" GenericParams TraitRef "for" ".." "{" "}",
-  Maybeunsafe "impl" GenericParams "!" TraitRef "for" ".." "{" "}",
+  MaybeUnsafe "impl" GenericParams ty_prim_sum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
+  MaybeUnsafe "impl" GenericParams "(" ty ")" MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
+  MaybeUnsafe "impl" GenericParams TraitRef "for" TySum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
+  MaybeUnsafe "impl" GenericParams "!" TraitRef "for" TySum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
+  MaybeUnsafe "impl" GenericParams TraitRef "for" ".." "{" "}",
+  MaybeUnsafe "impl" GenericParams "!" TraitRef "for" ".." "{" "}",
 };
 Maybeimpl_items: () = {
   impl_items,
