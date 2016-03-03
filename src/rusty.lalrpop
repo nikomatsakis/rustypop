@@ -239,42 +239,45 @@ ItemTrait: () = {
         TraitItem*
         "}",
 };
+
 TraitItem: () = {
-  trait_const,
-  trait_type,
-  trait_method,
+    TraitConst,
+    TraitType,
+    TraitMethod,
 };
-trait_const: () = {
-  MaybeOuterAttrs "const" Ident MaybeTyAscription Maybeconst_default ";",
+
+TraitConst: () = {
+    MaybeOuterAttrs "const" Ident MaybeTyAscription MaybeConstDefault ";",
 };
-Maybeconst_default: () = {
-  "=" Expr,
-  (),
+
+MaybeConstDefault: () = {
+    ("=" Expr)?
 };
-trait_type: () = {
+
+TraitType: () = {
   MaybeOuterAttrs "type" TyParam ";",
 };
 MaybeUnsafe: () = {
     "unsafe"?
 };
-trait_method: () = {
+TraitMethod: () = {
   type_method,
   method,
 };
 type_method: () = {
-  AttrsAndVis MaybeUnsafe "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause ";",
-  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause ";",
+  AttrsAndVis MaybeUnsafe "fn" Ident GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause ";",
+  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause ";",
 };
 method: () = {
-  AttrsAndVis MaybeUnsafe "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause InnerAttrs_and_block,
-  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause InnerAttrs_and_block,
+  AttrsAndVis MaybeUnsafe "fn" Ident GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause InnerAttrs_and_block,
+  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause InnerAttrs_and_block,
 };
 impl_method: () = {
   AttrsAndVis MaybeUnsafe "fn" Ident GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
   AttrsAndVis MaybeUnsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
 };
 item_impl: () = {
-  MaybeUnsafe "impl" GenericParams ty_prim_sum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
+  MaybeUnsafe "impl" GenericParams TyPrimSum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
   MaybeUnsafe "impl" GenericParams "(" ty ")" MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
   MaybeUnsafe "impl" GenericParams TraitRef "for" TySum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
   MaybeUnsafe "impl" GenericParams "!" TraitRef "for" TySum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
@@ -314,14 +317,14 @@ fn_decl: () = {
 fn_decl_with_self: () = {
   fn_params_with_self RetTy,
 };
-fn_decl_with_self_allow_anon_params: () = {
-  fn_anon_params_with_self RetTy,
+fn_decl_with_self_allow_AnonParams: () = {
+  fn_AnonParams_with_self RetTy,
 };
 fn_params: () = {
   "(" Maybeparams ")",
 };
-fn_anon_params: () = {
-  "(" anon_param anon_params_allow_variadic_tail ")",
+fn_AnonParams: () = {
+  "(" AnonParam AnonParams_allow_variadic_tail ")",
   "(" ")",
 };
 fn_params_with_self: () = {
@@ -330,11 +333,11 @@ fn_params_with_self: () = {
   "(" "&[]" Lifetime "mut"? "self" MaybeTyAscription Maybecomma_params ")",
   "(" Maybeparams ")",
 };
-fn_anon_params_with_self: () = {
-  "(" "mut"? "self" MaybeTyAscription Maybecomma_anon_params ")",
-  "(" "&[]" "mut"? "self" MaybeTyAscription Maybecomma_anon_params ")",
-  "(" "&[]" Lifetime "mut"? "self" MaybeTyAscription Maybecomma_anon_params ")",
-  "(" Maybeanon_params ")",
+fn_AnonParams_with_self: () = {
+  "(" "mut"? "self" MaybeTyAscription Maybecomma_AnonParams ")",
+  "(" "&[]" "mut"? "self" MaybeTyAscription Maybecomma_AnonParams ")",
+  "(" "&[]" Lifetime "mut"? "self" MaybeTyAscription Maybecomma_AnonParams ")",
+  "(" MaybeAnonParams ")",
 };
 Maybeparams: () = {
   params,
@@ -357,42 +360,45 @@ Maybecomma_params: () = {
   "," params ",",
   (),
 };
-Maybecomma_anon_params: () = {
+Maybecomma_AnonParams: () = {
   ",",
-  "," anon_params,
-  "," anon_params ",",
+  "," AnonParams,
+  "," AnonParams ",",
   (),
 };
-Maybeanon_params: () = {
-  anon_params,
-  anon_params ",",
+MaybeAnonParams: () = {
+  AnonParams,
+  AnonParams ",",
   (),
 };
-anon_params: () = {
-  anon_param,
-  anon_params "," anon_param,
+AnonParams: () = {
+  AnonParam,
+  AnonParams "," AnonParam,
 };
-anon_param: () = {
-  named_arg ":" ty,
+AnonParam: () = {
+  NamedArg ":" ty,
   ty,
 };
-anon_params_allow_variadic_tail: () = {
+AnonParams_allow_variadic_tail: () = {
   "," "...",
-  "," anon_param anon_params_allow_variadic_tail,
+  "," AnonParam AnonParams_allow_variadic_tail,
   (),
 };
-named_arg: () = {
+
+NamedArg: () = {
   Ident,
   "_",
   "&[]" Ident,
   "&[]" "_",
   "mut" Ident,
 };
+
 RetTy: () = {
     "->" "!",
     "->" ty,
     (),
 };
+
 GenericParams: () = {
     TyLt Comma1<LifetimeAndBounds> TyGt,
     TyLt (LifetimeAndBounds ",")+ Comma1<TyParam> TyGt,
@@ -407,7 +413,7 @@ WhereClause: () = {
 };
 WherePredicate: () = {
   ForLifetimes? Lifetime ":" bounds,
-  ForLifetimes ty ":" ty_param_bounds,
+  ForLifetimes ty ":" TyParamBounds,
 };
 ForLifetimes: () = {
   "for" TyLt Lifetimes TyGt,
@@ -514,13 +520,13 @@ PatVec_elts: () = {
   PatVec_elts "," Pat,
 };
 ty: () = {
-  ty_prim,
+  TyPrim,
   TyLt TySum MaybeAsTraitRef TyGt "::" Ident,
   "(" TySums ")",
   "(" TySums "," ")",
   "(" ")",
 };
-ty_prim: () = {
+TyPrim: () = {
   Path<Epsilon>,
   "box" ty,
   "*" mut_or_const ty,
@@ -542,7 +548,7 @@ ty_bare_fn: () = {
   "unsafe" "extern" Abi "fn" ty_fn_decl,
 };
 ty_fn_decl: () = {
-  GenericParams fn_anon_params RetTy,
+  GenericParams fn_AnonParams RetTy,
 };
 for_in_type: () = {
   "for" TyLt MaybeLifetimes TyGt for_in_type_suffix,
@@ -561,7 +567,7 @@ ty_qualified_path_and_GenericValues: () = {
 };
 ty_qualified_path: () = {
   TySum "as" TraitRef TyGt "::" Ident,
-  TySum "as" TraitRef TyGt "::" Ident "+" ty_param_bounds,
+  TySum "as" TraitRef TyGt "::" Ident "+" TyParamBounds,
 };
 MaybeTySums: () = {
   TySums,
@@ -574,16 +580,16 @@ TySums: () = {
 };
 TySum: () = {
   ty,
-  ty "+" ty_param_bounds,
+  ty "+" TyParamBounds,
 };
-ty_prim_sum: () = {
-  ty_prim,
-  ty_prim "+" ty_param_bounds,
+TyPrimSum: () = {
+  TyPrim,
+  TyPrim "+" TyParamBounds,
 };
 MaybeTyParamBounds: () = {
-    (":" ty_param_bounds)?
+    (":" TyParamBounds)?
 };
-ty_param_bounds: () = {
+TyParamBounds: () = {
   boundseq,
   (),
 };
