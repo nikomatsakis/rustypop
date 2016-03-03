@@ -51,9 +51,9 @@ OuterAttr: () = {
 };
 
 MetaItem: () = {
-    ident,
-    ident "=" lit,
-    ident "(" Comma<MetaItem> ")",
+    Ident,
+    Ident "=" lit,
+    Ident "(" Comma<MetaItem> ")",
 };
 
 AttrsAndVis: () = {
@@ -78,70 +78,73 @@ StmtItem: () = {
 };
 
 ItemStatic: () = {
-    "static" "mut"? ident ":" ty "=" Expr ";",
+    "static" "mut"? Ident ":" ty "=" Expr ";",
 };
 
 ItemConst: () = {
-    "const" ident ":" ty "=" Expr ";",
+    "const" Ident ":" ty "=" Expr ";",
 };
 
 ItemMacro: () = {
-    PathExpr "!" ident? parens_delimited_token_trees ";",
-    PathExpr "!" ident? braces_delimited_token_trees,
-    PathExpr "!" ident? brackets_delimited_token_trees ";",
+    PathExpr "!" Ident? parens_delimited_token_trees ";",
+    PathExpr "!" Ident? braces_delimited_token_trees,
+    PathExpr "!" Ident? brackets_delimited_token_trees ";",
 };
 
 ViewItem: () = {
     ItemUse,
     ExternFnItem,
-    "extern" "crate" ident ("as" ident)? ";",
+    "extern" "crate" Ident ("as" Ident)? ";",
 };
 
 ExternFnItem: () = {
-  "extern" abi? item_fn,
+    "extern" abi? ItemFn,
 };
 
 ItemUse: () = {
-    "use" view_path ";",
+    "use" ViewPath ";",
 };
 
-view_path: () = {
-  path_no_types_allowed,
-  path_no_types_allowed "::" "{" "}",
-  "::" "{" "}",
-  path_no_types_allowed "::" "{" idents_or_self "}",
-  "::" "{" idents_or_self "}",
-  path_no_types_allowed "::" "{" idents_or_self "," "}",
-  "::" "{" idents_or_self "," "}",
-  path_no_types_allowed "::" "*",
-  "{" "}",
-  "{" idents_or_self "}",
-  "{" idents_or_self "," "}",
-  path_no_types_allowed "as" ident,
+ViewPath: () = {
+    PathNoTypes,
+    PathNoTypes "::" "{" "}",
+    "::" "{" "}",
+    PathNoTypes "::" "{" IdentsOrSelf "}",
+    "::" "{" IdentsOrSelf "}",
+    PathNoTypes "::" "{" IdentsOrSelf "," "}",
+    "::" "{" IdentsOrSelf "," "}",
+    PathNoTypes "::" "*",
+    "{" "}",
+    "{" IdentsOrSelf "}",
+    "{" IdentsOrSelf "," "}",
+    PathNoTypes "as" Ident,
 };
+
 BlockItem: () = {
-  item_fn,
-  item_unsafe_fn,
-  item_mod,
-  item_foreign_mod,
-  item_struct,
+  ItemFn,
+  ItemUnsafeFn,
+  ItemMod,
+  ItemForeignMod,
+  ItemStruct,
   item_enum,
   item_trait,
   item_impl,
 };
-maybe_ty_ascription: () = {
-  ":" ty_sum,
-  (),
+
+MaybeTyAscription: () = {
+  (":" ty_sum)?
 };
-maybe_init_expr: () = {
-  "=" Expr,
-  (),
+
+MaybeInitExpr: () = {
+  ("=" Expr)?
 };
-item_struct: () = {
-  "struct" ident generic_params maybe_where_clause struct_decl_args,
-  "struct" ident generic_params struct_tuple_args maybe_where_clause ";",
-  "struct" ident generic_params maybe_where_clause ";",
+
+ItemStruct: () = {
+  "struct" Ident GenericParams MaybeWhereClause struct_decl_args,
+  "struct" Ident GenericParams struct_tuple_args MaybeWhereClause ";",
+  "struct" Ident GenericParams MaybeWhereClause ";",
 };
+
 struct_decl_args: () = {
   "{" struct_decl_fields "}",
   "{" struct_decl_fields "," "}",
@@ -156,7 +159,7 @@ struct_decl_fields: () = {
   (),
 };
 struct_decl_field: () = {
-  AttrsAndVis ident ":" ty_sum,
+  AttrsAndVis Ident ":" ty_sum,
 };
 struct_tuple_fields: () = {
   struct_tuple_field,
@@ -166,8 +169,8 @@ struct_tuple_field: () = {
   AttrsAndVis ty_sum,
 };
 item_enum: () = {
-  "enum" ident generic_params maybe_where_clause "{" enum_defs "}",
-  "enum" ident generic_params maybe_where_clause "{" enum_defs "," "}",
+  "enum" Ident GenericParams MaybeWhereClause "{" enum_defs "}",
+  "enum" Ident GenericParams MaybeWhereClause "{" enum_defs "," "}",
 };
 enum_defs: () = {
   enum_def,
@@ -175,20 +178,20 @@ enum_defs: () = {
   (),
 };
 enum_def: () = {
-  AttrsAndVis ident enum_args,
+  AttrsAndVis Ident enum_args,
 };
 enum_args: () = {
   "{" struct_decl_fields "}",
   "{" struct_decl_fields "," "}",
-  "(" maybe_ty_sums ")",
+  "(" Maybety_sums ")",
   "=" Expr,
   (),
 };
-item_mod: () = {
-  "mod" ident ";",
-  "mod" ident "{" InnerAttr* ModItem* "}",
+ItemMod: () = {
+  "mod" Ident ";",
+  "mod" Ident "{" InnerAttr* ModItem* "}",
 };
-item_foreign_mod: () = {
+ItemForeignMod: () = {
   "extern" abi? "{" InnerAttr* ForeignItem* "}",
 };
 abi: () = {
@@ -200,13 +203,13 @@ ForeignItem: () = {
   AttrsAndVis "unsafe" item_foreign_fn,
 };
 item_foreign_static: () = {
-  "mut"? ident ":" ty ";",
+  "mut"? Ident ":" ty ";",
 };
 item_foreign_fn: () = {
-  "fn" ident generic_params fn_decl_allow_variadic maybe_where_clause ";",
+  "fn" Ident GenericParams fn_decl_allow_variadic MaybeWhereClause ";",
 };
 fn_decl_allow_variadic: () = {
-  fn_params_allow_variadic ret_ty,
+  fn_params_allow_variadic RetTy,
 };
 fn_params_allow_variadic: () = {
   "(" ")",
@@ -218,27 +221,27 @@ visibility: () = {
   "pub",
   (),
 };
-idents_or_self: () = {
-  ident_or_self,
-  ident_or_self "as" ident,
-  idents_or_self "," ident_or_self,
+IdentsOrSelf: () = {
+  IdentOrSelf,
+  IdentOrSelf "as" Ident,
+  IdentsOrSelf "," IdentOrSelf,
 };
-ident_or_self: () = {
-  ident,
+IdentOrSelf: () = {
+  Ident,
   "self",
 };
 ItemType: () = {
-  "type" ident generic_params maybe_where_clause "=" ty_sum ";",
+  "type" Ident GenericParams MaybeWhereClause "=" ty_sum ";",
 };
 for_sized: () = {
-  "for" "?" ident,
-  "for" ident "?",
+  "for" "?" Ident,
+  "for" Ident "?",
   (),
 };
 item_trait: () = {
-  maybe_unsafe "trait" ident generic_params for_sized maybe_ty_param_bounds maybe_where_clause "{" maybe_trait_items "}",
+  Maybeunsafe "trait" Ident GenericParams for_sized MaybeTyParamBounds MaybeWhereClause "{" Maybetrait_items "}",
 };
-maybe_trait_items: () = {
+Maybetrait_items: () = {
   trait_items,
   (),
 };
@@ -252,16 +255,16 @@ trait_item: () = {
   trait_method,
 };
 trait_const: () = {
-  MaybeOuterAttrs "const" ident maybe_ty_ascription maybe_const_default ";",
+  MaybeOuterAttrs "const" Ident MaybeTyAscription Maybeconst_default ";",
 };
-maybe_const_default: () = {
+Maybeconst_default: () = {
   "=" Expr,
   (),
 };
 trait_type: () = {
-  MaybeOuterAttrs "type" ty_param ";",
+  MaybeOuterAttrs "type" TyParam ";",
 };
-maybe_unsafe: () = {
+Maybeunsafe: () = {
   "unsafe",
   (),
 };
@@ -270,26 +273,26 @@ trait_method: () = {
   method,
 };
 type_method: () = {
-  AttrsAndVis maybe_unsafe "fn" ident generic_params fn_decl_with_self_allow_anon_params maybe_where_clause ";",
-  AttrsAndVis maybe_unsafe "extern" abi? "fn" ident generic_params fn_decl_with_self_allow_anon_params maybe_where_clause ";",
+  AttrsAndVis Maybeunsafe "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause ";",
+  AttrsAndVis Maybeunsafe "extern" abi? "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause ";",
 };
 method: () = {
-  AttrsAndVis maybe_unsafe "fn" ident generic_params fn_decl_with_self_allow_anon_params maybe_where_clause InnerAttrs_and_block,
-  AttrsAndVis maybe_unsafe "extern" abi? "fn" ident generic_params fn_decl_with_self_allow_anon_params maybe_where_clause InnerAttrs_and_block,
+  AttrsAndVis Maybeunsafe "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause InnerAttrs_and_block,
+  AttrsAndVis Maybeunsafe "extern" abi? "fn" Ident GenericParams fn_decl_with_self_allow_anon_params MaybeWhereClause InnerAttrs_and_block,
 };
 impl_method: () = {
-  AttrsAndVis maybe_unsafe "fn" ident generic_params fn_decl_with_self maybe_where_clause InnerAttrs_and_block,
-  AttrsAndVis maybe_unsafe "extern" abi? "fn" ident generic_params fn_decl_with_self maybe_where_clause InnerAttrs_and_block,
+  AttrsAndVis Maybeunsafe "fn" Ident GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
+  AttrsAndVis Maybeunsafe "extern" abi? "fn" Ident GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
 };
 item_impl: () = {
-  maybe_unsafe "impl" generic_params ty_prim_sum maybe_where_clause "{" InnerAttr* maybe_impl_items "}",
-  maybe_unsafe "impl" generic_params "(" ty ")" maybe_where_clause "{" InnerAttr* maybe_impl_items "}",
-  maybe_unsafe "impl" generic_params trait_ref "for" ty_sum maybe_where_clause "{" InnerAttr* maybe_impl_items "}",
-  maybe_unsafe "impl" generic_params "!" trait_ref "for" ty_sum maybe_where_clause "{" InnerAttr* maybe_impl_items "}",
-  maybe_unsafe "impl" generic_params trait_ref "for" ".." "{" "}",
-  maybe_unsafe "impl" generic_params "!" trait_ref "for" ".." "{" "}",
+  Maybeunsafe "impl" GenericParams ty_prim_sum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
+  Maybeunsafe "impl" GenericParams "(" ty ")" MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
+  Maybeunsafe "impl" GenericParams trait_ref "for" ty_sum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
+  Maybeunsafe "impl" GenericParams "!" trait_ref "for" ty_sum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
+  Maybeunsafe "impl" GenericParams trait_ref "for" ".." "{" "}",
+  Maybeunsafe "impl" GenericParams "!" trait_ref "for" ".." "{" "}",
 };
-maybe_impl_items: () = {
+Maybeimpl_items: () = {
   impl_items,
   (),
 };
@@ -307,44 +310,44 @@ impl_const: () = {
   AttrsAndVis ItemConst,
 };
 impl_type: () = {
-  AttrsAndVis "type" ident generic_params "=" ty_sum ";",
+  AttrsAndVis "type" Ident GenericParams "=" ty_sum ";",
 };
-item_fn: () = {
-  "fn" ident generic_params fn_decl maybe_where_clause InnerAttrs_and_block,
+ItemFn: () = {
+  "fn" Ident GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
 };
-item_unsafe_fn: () = {
-  "unsafe" "fn" ident generic_params fn_decl maybe_where_clause InnerAttrs_and_block,
-  "unsafe" "extern" abi? "fn" ident generic_params fn_decl maybe_where_clause InnerAttrs_and_block,
+ItemUnsafeFn: () = {
+  "unsafe" "fn" Ident GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
+  "unsafe" "extern" abi? "fn" Ident GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
 };
 fn_decl: () = {
-  fn_params ret_ty,
+  fn_params RetTy,
 };
 fn_decl_with_self: () = {
-  fn_params_with_self ret_ty,
+  fn_params_with_self RetTy,
 };
 fn_decl_with_self_allow_anon_params: () = {
-  fn_anon_params_with_self ret_ty,
+  fn_anon_params_with_self RetTy,
 };
 fn_params: () = {
-  "(" maybe_params ")",
+  "(" Maybeparams ")",
 };
 fn_anon_params: () = {
   "(" anon_param anon_params_allow_variadic_tail ")",
   "(" ")",
 };
 fn_params_with_self: () = {
-  "(" "mut"? "self" maybe_ty_ascription maybe_comma_params ")",
-  "(" "&[]" "mut"? "self" maybe_ty_ascription maybe_comma_params ")",
-  "(" "&[]" lifetime "mut"? "self" maybe_ty_ascription maybe_comma_params ")",
-  "(" maybe_params ")",
+  "(" "mut"? "self" MaybeTyAscription Maybecomma_params ")",
+  "(" "&[]" "mut"? "self" MaybeTyAscription Maybecomma_params ")",
+  "(" "&[]" Lifetime "mut"? "self" MaybeTyAscription Maybecomma_params ")",
+  "(" Maybeparams ")",
 };
 fn_anon_params_with_self: () = {
-  "(" "mut"? "self" maybe_ty_ascription maybe_comma_anon_params ")",
-  "(" "&[]" "mut"? "self" maybe_ty_ascription maybe_comma_anon_params ")",
-  "(" "&[]" lifetime "mut"? "self" maybe_ty_ascription maybe_comma_anon_params ")",
-  "(" maybe_anon_params ")",
+  "(" "mut"? "self" MaybeTyAscription Maybecomma_anon_params ")",
+  "(" "&[]" "mut"? "self" MaybeTyAscription Maybecomma_anon_params ")",
+  "(" "&[]" Lifetime "mut"? "self" MaybeTyAscription Maybecomma_anon_params ")",
+  "(" Maybeanon_params ")",
 };
-maybe_params: () = {
+Maybeparams: () = {
   params,
   params ",",
   (),
@@ -357,21 +360,21 @@ param: () = {
   Pat ":" ty_sum,
 };
 inferrable_param: () = {
-  Pat maybe_ty_ascription,
+  Pat MaybeTyAscription,
 };
-maybe_comma_params: () = {
+Maybecomma_params: () = {
   ",",
   "," params,
   "," params ",",
   (),
 };
-maybe_comma_anon_params: () = {
+Maybecomma_anon_params: () = {
   ",",
   "," anon_params,
   "," anon_params ",",
   (),
 };
-maybe_anon_params: () = {
+Maybeanon_params: () = {
   anon_params,
   anon_params ",",
   (),
@@ -390,63 +393,53 @@ anon_params_allow_variadic_tail: () = {
   (),
 };
 named_arg: () = {
-  ident,
+  Ident,
   "_",
-  "&[]" ident,
+  "&[]" Ident,
   "&[]" "_",
-  "mut" ident,
+  "mut" Ident,
 };
-ret_ty: () = {
-  "->" "!",
-  "->" ty,
-  (),
+RetTy: () = {
+    "->" "!",
+    "->" ty,
+    (),
 };
-generic_params: () = {
-  TyLt lifetimes TyGt,
-  TyLt lifetimes "," TyGt,
-  TyLt lifetimes "," ty_params TyGt,
-  TyLt lifetimes "," ty_params "," TyGt,
-  TyLt ty_params TyGt,
-  TyLt ty_params "," TyGt,
-  (),
+GenericParams: () = {
+    TyLt Comma1<LifetimeAndBounds> TyGt,
+    TyLt (LifetimeAndBounds ",")+ Comma1<TyParam> TyGt,
+    TyLt Comma1<TyParam> TyGt,
+    TyLt TyGt,
 };
-maybe_where_clause: () = {
-  (),
-  where_clause,
+MaybeWhereClause: () = {
+  WhereClause?
 };
-where_clause: () = {
-  "where" where_predicates,
-  "where" where_predicates ",",
+WhereClause: () = {
+  "where" Comma<WherePredicate>
 };
-where_predicates: () = {
-  where_predicate,
-  where_predicates "," where_predicate,
+WherePredicate: () = {
+  ForLifetimes? Lifetime ":" bounds,
+  ForLifetimes ty ":" ty_param_bounds,
 };
-where_predicate: () = {
-  for_lifetimes? lifetime ":" bounds,
-  for_lifetimes ty ":" ty_param_bounds,
+ForLifetimes: () = {
+  "for" TyLt Lifetimes TyGt,
 };
-for_lifetimes: () = {
-  "for" TyLt lifetimes TyGt,
-};
-ty_params: () = {
-  ty_param,
-  ty_params "," ty_param,
-};
-path_no_types_allowed: () = {
-  ident,
-  "::" ident,
+
+TyParams: () = Comma1<TyParam>;
+
+PathNoTypes: () = {
+  Ident,
+  "::" Ident,
   "self",
   "::" "self",
-  path_no_types_allowed "::" ident,
+  PathNoTypes "::" Ident,
 };
 GenericArgs: () = {
   TyLt generic_values TyGt,
 };
 generic_values: () = {
-  maybe_lifetimes maybe_ty_sums_and_or_bindings,
+  MaybeLifetimes Maybety_sums_and_or_bindings,
 };
-maybe_ty_sums_and_or_bindings: () = {
+Maybety_sums_and_or_bindings: () = {
   ty_sums,
   ty_sums ",",
   ty_sums "," bindings,
@@ -454,7 +447,7 @@ maybe_ty_sums_and_or_bindings: () = {
   bindings ",",
   (),
 };
-maybe_bindings: () = {
+Maybebindings: () = {
   "," bindings,
   (),
 };
@@ -473,12 +466,12 @@ PatWithBindingMode<BM>: () = {
     PathExpr "{" PatStruct "}",
     PathExpr "(" ".." ")",
     PathExpr "(" Comma<Pat> ")",
-    PathExpr "!" ident? delimited_token_trees,
-    BM ident,
-    ident "@" Pat,
-    BM ident "@" Pat,
+    PathExpr "!" Ident? delimited_token_trees,
+    BM Ident,
+    Ident "@" Pat,
+    BM Ident "@" Pat,
     "box" Pat,
-    TyLt ty_sum maybe_as_trait_ref TyGt "::" ident,
+    TyLt ty_sum Maybeas_trait_ref TyGt "::" Ident,
 };
 pats_or: () = {
   Pat,
@@ -498,12 +491,12 @@ lit_or_path: () = {
   "-" lit,
 };
 PatField: () = {
-  ident,
-  BindingMode ident,
-  "box" ident,
-  "box" BindingMode ident,
-  ident ":" Pat,
-  BindingMode ident ":" Pat,
+  Ident,
+  BindingMode Ident,
+  "box" Ident,
+  "box" BindingMode Ident,
+  Ident ":" Pat,
+  BindingMode Ident ":" Pat,
 };
 PatFields: () = {
   PatField,
@@ -535,7 +528,7 @@ PatVec_elts: () = {
 };
 ty: () = {
   ty_prim,
-  TyLt ty_sum maybe_as_trait_ref TyGt "::" ident,
+  TyLt ty_sum Maybeas_trait_ref TyGt "::" Ident,
   "(" ty_sums ")",
   "(" ty_sums "," ")",
   "(" ")",
@@ -546,7 +539,7 @@ ty_prim: () = {
   "*" mut_or_const ty,
   AnyAmp ty,
   AnyAmp "mut" ty,
-  AnyAmp lifetime "mut"? ty,
+  AnyAmp Lifetime "mut"? ty,
   "[" ty "]",
   "[" ty "," ".." Expr "]",
   "[" ty ";" Expr "]",
@@ -562,10 +555,10 @@ ty_bare_fn: () = {
   "unsafe" "extern" abi? "fn" ty_fn_decl,
 };
 ty_fn_decl: () = {
-  generic_params fn_anon_params ret_ty,
+  GenericParams fn_anon_params RetTy,
 };
 for_in_type: () = {
-  "for" TyLt maybe_lifetimes TyGt for_in_type_suffix,
+  "for" TyLt MaybeLifetimes TyGt for_in_type_suffix,
 };
 for_in_type_suffix: () = {
   ty_bare_fn,
@@ -576,14 +569,14 @@ mut_or_const: () = {
   "const",
 };
 ty_qualified_path_and_generic_values: () = {
-  ty_qualified_path maybe_bindings,
-  ty_qualified_path "," ty_sums maybe_bindings,
+  ty_qualified_path Maybebindings,
+  ty_qualified_path "," ty_sums Maybebindings,
 };
 ty_qualified_path: () = {
-  ty_sum "as" trait_ref TyGt "::" ident,
-  ty_sum "as" trait_ref TyGt "::" ident "+" ty_param_bounds,
+  ty_sum "as" trait_ref TyGt "::" Ident,
+  ty_sum "as" trait_ref TyGt "::" Ident "+" ty_param_bounds,
 };
-maybe_ty_sums: () = {
+Maybety_sums: () = {
   ty_sums,
   ty_sums ",",
   (),
@@ -600,9 +593,8 @@ ty_prim_sum: () = {
   ty_prim,
   ty_prim "+" ty_param_bounds,
 };
-maybe_ty_param_bounds: () = {
-  ":" ty_param_bounds,
-  (),
+MaybeTyParamBounds: () = {
+    (":" ty_param_bounds)?
 };
 ty_param_bounds: () = {
   boundseq,
@@ -613,7 +605,7 @@ boundseq: () = {
   boundseq "+" polybound,
 };
 polybound: () = {
-  "for" TyLt maybe_lifetimes TyGt bound,
+  "for" TyLt MaybeLifetimes TyGt bound,
   bound,
   "?" bound,
 };
@@ -622,13 +614,13 @@ bindings: () = {
   bindings "," binding,
 };
 binding: () = {
-  ident "=" ty,
+  Ident "=" ty,
 };
-ty_param: () = {
-  ident maybe_ty_param_bounds maybe_ty_default,
-  ident "?" ident maybe_ty_param_bounds maybe_ty_default,
+TyParam: () = {
+  Ident MaybeTyParamBounds MaybeTyDefault,
+  Ident "?" Ident MaybeTyParamBounds MaybeTyDefault,
 };
-maybe_bounds: () = {
+Maybebounds: () = {
   ":" bounds,
   (),
 };
@@ -637,35 +629,26 @@ bounds: () = {
   bounds "+" bound,
 };
 bound: () = {
-  lifetime,
+  Lifetime,
   trait_ref,
 };
-maybe_ltbounds: () = {
-  ":" ltbounds,
-  (),
+MaybeLifetimeBounds: () = {
+    (":" LifetimeBounds)?
 };
-ltbounds: () = {
-  lifetime,
-  ltbounds "+" lifetime,
+LifetimeBounds: () = {
+    Lifetime,
+    LifetimeBounds "+" Lifetime,
 };
-maybe_ty_default: () = {
-  "=" ty_sum,
-  (),
+MaybeTyDefault: () = {
+    ("=" ty_sum)?
 };
-maybe_lifetimes: () = {
-  lifetimes,
-  lifetimes ",",
-  (),
-};
-lifetimes: () = {
-  lifetime_and_bounds,
-  lifetimes "," lifetime_and_bounds,
-};
-lifetime_and_bounds: () = {
-  LIFETIME maybe_ltbounds,
+MaybeLifetimes: () = Comma<LifetimeAndBounds>;
+Lifetimes: () = Comma1<LifetimeAndBounds>;
+LifetimeAndBounds: () = {
+  LIFETIME MaybeLifetimeBounds,
   "'static",
 };
-lifetime: () = {
+Lifetime: () = {
   LIFETIME,
   "'static",
 };
@@ -673,12 +656,12 @@ trait_ref: () = {
   Path<Epsilon>,
 };
 InnerAttrs_and_block: () = {
-  "{" InnerAttr* maybe_stmts "}",
+  "{" InnerAttr* Maybestmts "}",
 };
 block: () = {
-  "{" maybe_stmts "}",
+  "{" Maybestmts "}",
 };
-maybe_stmts: () = {
+Maybestmts: () = {
   stmts,
   stmts ExprNoStmtLike,
   ExprNoStmtLike,
@@ -689,7 +672,7 @@ stmts: () = {
   stmts stmt,
 };
 stmt: () = {
-  let,
+  Let,
   StmtItem,
   "pub" StmtItem,
   OuterAttrs StmtItem,
@@ -707,17 +690,17 @@ PathExpr: () = {
 // Parses a path like `x::y::z`, where A is the token that separates
 // the generic arguments.
 Path<ARG_SEP>: () = {
-    ident,
-    "::" ident,
-    "self" "::" ident,
-    "super" "::" ident,
-    Path<ARG_SEP> "::" ident,
+    Ident,
+    "::" Ident,
+    "self" "::" Ident,
+    "super" "::" Ident,
+    Path<ARG_SEP> "::" Ident,
     Path<ARG_SEP> ARG_SEP GenericArgs,
 };
 
 MacroExpr: () = {
-  PathExpr "!" ident? parens_delimited_token_trees,
-  PathExpr "!" ident? brackets_delimited_token_trees,
+  PathExpr "!" Ident? parens_delimited_token_trees,
+  PathExpr "!" Ident? brackets_delimited_token_trees,
 };
 
 // New-style names:
@@ -857,23 +840,23 @@ ExprAtom<S,B,L>: () = {
     "[" Comma<Expr> "]",
     "[" Expr ";" Expr "]",
     "continue" if S != "", // FIXME#1
-    "continue" ident if S != "", // FIXME#1
+    "continue" Ident if S != "", // FIXME#1
     "break" if S != "", // FIXME#1
-    "break" ident if S != "", // FIXME#1
+    "break" Ident if S != "", // FIXME#1
     Expr_qualified_path,
     ExprStmtLike if L != "",
     block if B != "",
 };
 
 Expr_qualified_path: () = {
-  TyLt ty_sum maybe_as_trait_ref TyGt "::" ident maybe_qpath_params,
+  TyLt ty_sum Maybeas_trait_ref TyGt "::" Ident Maybeqpath_params,
 };
 
-maybe_qpath_params: () = {
+Maybeqpath_params: () = {
   "::" GenericArgs,
   (),
 };
-maybe_as_trait_ref: () = {
+Maybeas_trait_ref: () = {
   "as" trait_ref,
   (),
 };
@@ -898,7 +881,7 @@ FieldValues: () = {
 };
 
 FieldValue: () = {
-    ident ":" Expr,
+    Ident ":" Expr,
 };
 
 ExprStmtLike: () = {
@@ -910,7 +893,7 @@ ExprStmtLike: () = {
   ExprLoop,
   ExprFor,
   "unsafe" block,
-  PathExpr "!" ident? braces_delimited_token_trees,
+  PathExpr "!" Ident? braces_delimited_token_trees,
 };
 ExprStmtLikeSuffix: () = {
   ExprStmtLike,
@@ -935,13 +918,13 @@ match_clause: () = {
   block_match_clause ",",
 };
 nonblock_match_clause: () = {
-  MaybeOuterAttrs pats_or maybe_guard "=>" ExprNoStmtLike,
-  MaybeOuterAttrs pats_or maybe_guard "=>" ExprStmtLikeSuffix,
+  MaybeOuterAttrs pats_or Maybeguard "=>" ExprNoStmtLike,
+  MaybeOuterAttrs pats_or Maybeguard "=>" ExprStmtLikeSuffix,
 };
 block_match_clause: () = {
-  MaybeOuterAttrs pats_or maybe_guard "=>" block,
+  MaybeOuterAttrs pats_or Maybeguard "=>" block,
 };
-maybe_guard: () = {
+Maybeguard: () = {
   "if" ExprNoStruct,
   (),
 };
@@ -959,23 +942,22 @@ block_or_if: () = {
   ExprIfLet,
 };
 ExprWhile: () = {
-  maybe_label "while" ExprNoStruct block,
+  MaybeLabel "while" ExprNoStruct block,
 };
 ExprWhileLet: () = {
-  maybe_label "while" "let" Pat "=" ExprNoStruct block,
+  MaybeLabel "while" "let" Pat "=" ExprNoStruct block,
 };
 ExprLoop: () = {
-  maybe_label "loop" block,
+  MaybeLabel "loop" block,
 };
 ExprFor: () = {
-  maybe_label "for" Pat "in" ExprNoStruct block,
+  MaybeLabel "for" Pat "in" ExprNoStruct block,
 };
-maybe_label: () = {
-  lifetime ":",
-  (),
+MaybeLabel: () = {
+    (Lifetime ":")?
 };
-let: () = {
-  "let" Pat maybe_ty_ascription maybe_init_expr ";",
+Let: () = {
+  "let" Pat MaybeTyAscription MaybeInitExpr ";",
 };
 lit: () = {
   LIT_BYTE,
@@ -992,7 +974,8 @@ str: () = {
   LIT_BYTE_STR,
   LIT_BYTE_STR_RAW,
 };
-ident: () = {
+
+Ident: () = {
   IDENT,
 };
 unpaired_token: () = {
@@ -1116,18 +1099,34 @@ brackets_delimited_token_trees: () = {
   "[" token_trees "]",
 };
 
-maybe_ident: () = {
+MaybeIdent: () = {
   (),
-  ident,
+  Ident,
 };
 
+// Comma-separated list with optional trailing comma.  Potentially
+// empty.
 #[inline]
 Comma<E>: () =
     Delim<E,",">;
 
+// Delimeted list of E with optional trailing delimeter. Potentially
+// empty.
 #[inline]
 Delim<E,D>: () =
     (E D)* E?;
+
+// Comma-separated list of length at least 1.
+#[inline]
+Comma1<E>: () =
+    Delim1<E,",">;
+
+// Delimited list of length at least 1.
+#[inline]
+Delim1<E,D>: () = {
+    (E D)+,
+    (E D)* E,
+};
 
 #[inline]
 AnyPipe: () = {
