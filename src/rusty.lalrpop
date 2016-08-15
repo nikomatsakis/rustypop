@@ -803,8 +803,16 @@ ExprMulDiv<S,B,L,T>: () = {
 };
 
 ExprAs<S,B,L,T>: () = {
-    ExprSuffix<S,B,L>,
-    ExprSuffix<S,B,L> "as" ty if T != "", // FIXME#2
+    ExprPrefix<S,B,L>,
+    ExprPrefix<S,B,L> "as" ty if T != "", // FIXME#2
+};
+
+ExprPrefix<S,B,L>: () = {
+    "box" ExprSuffix<S,"B","L">,
+    "-" ExprSuffix<S,"B","L">,
+    "!" ExprSuffix<S,"B","L">,
+    "*" ExprSuffix<S,"B","L">,
+    AnyAmp "mut"? ExprSuffix<S,"B","L">,
 };
 
 ExprSuffix<S,B,L>: () = {
@@ -813,14 +821,6 @@ ExprSuffix<S,B,L>: () = {
     ExprSuffix<S,B,L> "." LIT_INTEGER,
     ExprSuffix<S,B,L> "[" Expr "]",
     ExprSuffix<S,B,L> "(" Comma<Expr> ")",
-};
-
-ExprPrefix<S,B,L>: () = {
-    "box" ExprPrefix<S,"B","L">,
-    "-" ExprPrefix<S,"B","L">,
-    "!" ExprPrefix<S,"B","L">,
-    "*" ExprPrefix<S,"B","L">,
-    AnyAmp "mut"? ExprPrefix<S,"B","L">,
 };
 
 ExprAtom<S,B,L>: () = {
