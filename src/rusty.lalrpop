@@ -474,59 +474,71 @@ PatWithBindingMode<BM>: () = {
     "box" Pat,
     TyLt TySum MaybeAsTraitRef TyGt "::" Identifier,
 };
-pats_or: () = {
-  Pat,
-  pats_or "|[]" Pat,
+
+PatsOr: () = {
+    Delim1NoTrail<Pat, "|[]">
 };
+
 BindingMode: () = {
     RefBindingMode,
     "mut",
 };
+
 RefBindingMode: () = {
     "ref",
     "ref" "mut",
 };
+
 LitOrPath: () = {
   PathExpr,
   Lit,
   "-" Lit,
 };
+
 PatField: () = {
-  Identifier,
-  BindingMode Identifier,
-  "box" Identifier,
-  "box" BindingMode Identifier,
-  Identifier ":" Pat,
-  BindingMode Identifier ":" Pat,
+    Identifier,
+    BindingMode Identifier,
+    "box" Identifier,
+    "box" BindingMode Identifier,
+    Identifier ":" Pat,
+    BindingMode Identifier ":" Pat,
 };
+
+// LALRPOP BUG: Removing the `#[inline]` causes LALRPOP to fail with
+// no useful output, unless you pipe through a file. Can I reduce
+// this? [Also, the error message is confusing.]
+#[inline]
 PatFields: () = {
-  PatField,
-  PatFields "," PatField,
+    Comma1NoTrail<PatField>
 };
+
 PatStruct: () = {
   PatFields,
   PatFields ",",
   PatFields "," "..",
   "..",
 };
+
 PatVec: () = {
-  PatVec_elts,
-  PatVec_elts ",",
-  PatVec_elts "..",
-  PatVec_elts "," "..",
-  PatVec_elts ".." "," PatVec_elts,
-  PatVec_elts ".." "," PatVec_elts ",",
-  PatVec_elts "," ".." "," PatVec_elts,
-  PatVec_elts "," ".." "," PatVec_elts ",",
-  ".." "," PatVec_elts,
-  ".." "," PatVec_elts ",",
+  PatVecElts,
+  PatVecElts ",",
+  PatVecElts "..",
+  PatVecElts "," "..",
+  PatVecElts ".." "," PatVecElts,
+  PatVecElts ".." "," PatVecElts ",",
+  PatVecElts "," ".." "," PatVecElts,
+  PatVecElts "," ".." "," PatVecElts ",",
+  ".." "," PatVecElts,
+  ".." "," PatVecElts ",",
   "..",
   (),
 };
-PatVec_elts: () = {
+
+PatVecElts: () = {
   Pat,
-  PatVec_elts "," Pat,
+  PatVecElts "," Pat,
 };
+
 ty: () = {
   TyPrim,
   TyLt TySum MaybeAsTraitRef TyGt "::" Identifier,
@@ -845,7 +857,7 @@ ExprAtom<S,B,L>: () = {
 };
 
 Expr_qualified_path: () = {
-  TyLt TySum MaybeAsTraitRef TyGt "::" Identifier Maybeqpath_params,
+    TyLt TySum MaybeAsTraitRef TyGt "::" Identifier Maybeqpath_params,
 };
 
 Maybeqpath_params: () = {
@@ -900,27 +912,27 @@ ExprStmtLikeSuffix: () = {
 };
 ExprMatch: () = {
   "match" ExprNoStruct "{" "}",
-  "match" ExprNoStruct "{" match_clauses "}",
-  "match" ExprNoStruct "{" match_clauses nonblock_match_clause "}",
-  "match" ExprNoStruct "{" nonblock_match_clause "}",
+  "match" ExprNoStruct "{" MatchClauses "}",
+  "match" ExprNoStruct "{" MatchClauses NonBlockMatchClause "}",
+  "match" ExprNoStruct "{" NonBlockMatchClause "}",
 };
-match_clauses: () = {
-  match_clause,
-  match_clauses match_clause,
+MatchClauses: () = {
+  MatchClause,
+  MatchClauses MatchClause,
 };
-match_clause: () = {
-  nonblock_match_clause ",",
-  block_match_clause,
-  block_match_clause ",",
+MatchClause: () = {
+  NonBlockMatchClause ",",
+  BlockMatchClause,
+  BlockMatchClause ",",
 };
-nonblock_match_clause: () = {
-  MaybeOuterAttrs pats_or Maybeguard "=>" ExprNoStmtLike,
-  MaybeOuterAttrs pats_or Maybeguard "=>" ExprStmtLikeSuffix,
+NonBlockMatchClause: () = {
+  MaybeOuterAttrs PatsOr MaybeGuard "=>" ExprNoStmtLike,
+  MaybeOuterAttrs PatsOr MaybeGuard "=>" ExprStmtLikeSuffix,
 };
-block_match_clause: () = {
-  MaybeOuterAttrs pats_or Maybeguard "=>" block,
+BlockMatchClause: () = {
+  MaybeOuterAttrs PatsOr MaybeGuard "=>" block,
 };
-Maybeguard: () = {
+MaybeGuard: () = {
   "if" ExprNoStruct,
   (),
 };
