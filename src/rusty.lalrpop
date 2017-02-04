@@ -26,7 +26,7 @@ use token::Token;
 grammar<'input>;
 
 pub Crate: () = {
-  Shebang? InnerAttr* ModItem*,
+    Shebang? InnerAttr* ModItem*,
 };
 
 Shebang: () = {
@@ -361,7 +361,7 @@ fn_AnonParams_with_self: () = {
 param: () = {
   Pat ":" TySum,
 };
-inferrable_param: () = {
+InferrableParam: () = {
   Pat MaybeTyAscription,
 };
 Maybecomma_params: () = {
@@ -858,8 +858,8 @@ MaybeAsTraitRef: () = {
 };
 
 LambdaExpr<S,B,L>: () = {
-    AnyPipe Comma<inferrable_param> "|[]" ExprRestricted<S,"B","L">,
-    AnyPipe Comma<inferrable_param> "|[]" "->" ty "{" Expr "}",
+    AnyPipe Comma<InferrableParam> "|[]" ExprRestricted<S,"B","L">,
+    AnyPipe Comma<InferrableParam> "|[]" "->" ty "{" Expr "}",
 };
 
 StructExprFields: () = {
