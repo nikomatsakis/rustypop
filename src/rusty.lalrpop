@@ -130,7 +130,7 @@ BlockItem: () = {
   ItemStruct,
   ItemEnum,
   ItemTrait,
-  item_impl,
+  ItemImpl,
 };
 
 MaybeTyAscription: () = {
@@ -215,9 +215,9 @@ fn_decl_allow_variadic: () = {
 };
 fn_params_allow_variadic: () = {
   "(" ")",
-  "(" params ")",
-  "(" params "," ")",
-  "(" params "," "..." ")",
+  "(" Comma1NoTrail<param> ")",
+  "(" Comma1NoTrail<param> "," ")",
+  "(" Comma1NoTrail<param> "," "..." ")",
 };
 visibility: () = {
   "pub",
@@ -257,73 +257,90 @@ MaybeConstDefault: () = {
 };
 
 TraitType: () = {
-  MaybeOuterAttrs "type" TyParam ";",
+    MaybeOuterAttrs "type" TyParam ";",
 };
+
 MaybeUnsafe: () = {
     "unsafe"?
 };
+
 TraitMethod: () = {
-  type_method,
-  method,
+    TypeMethod,
+    Method,
 };
-type_method: () = {
-  AttrsAndVis MaybeUnsafe "fn" Identifier GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause ";",
-  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Identifier GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause ";",
+
+TypeMethod: () = {
+    AttrsAndVis MaybeUnsafe "fn" Identifier GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause ";",
+    AttrsAndVis MaybeUnsafe "extern" Abi "fn" Identifier GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause ";",
 };
-method: () = {
-  AttrsAndVis MaybeUnsafe "fn" Identifier GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause InnerAttrs_and_block,
-  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Identifier GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause InnerAttrs_and_block,
+
+Method: () = {
+    AttrsAndVis MaybeUnsafe "fn" Identifier GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause InnerAttrs_and_block,
+    AttrsAndVis MaybeUnsafe "extern" Abi "fn" Identifier GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause InnerAttrs_and_block,
 };
-impl_method: () = {
+
+ImplMethod: () = {
   AttrsAndVis MaybeUnsafe "fn" Identifier GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
   AttrsAndVis MaybeUnsafe "extern" Abi "fn" Identifier GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
 };
-item_impl: () = {
-  MaybeUnsafe "impl" GenericParams TyPrimSum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
-  MaybeUnsafe "impl" GenericParams "(" ty ")" MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
-  MaybeUnsafe "impl" GenericParams TraitRef "for" TySum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
-  MaybeUnsafe "impl" GenericParams "!" TraitRef "for" TySum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
+
+ItemImpl: () = {
+  MaybeUnsafe "impl" GenericParams TyPrimSum MaybeWhereClause "{" InnerAttr* MaybeImplItems "}",
+  MaybeUnsafe "impl" GenericParams "(" ty ")" MaybeWhereClause "{" InnerAttr* MaybeImplItems "}",
+  MaybeUnsafe "impl" GenericParams TraitRef "for" TySum MaybeWhereClause "{" InnerAttr* MaybeImplItems "}",
+  MaybeUnsafe "impl" GenericParams "!" TraitRef "for" TySum MaybeWhereClause "{" InnerAttr* MaybeImplItems "}",
   MaybeUnsafe "impl" GenericParams TraitRef "for" ".." "{" "}",
   MaybeUnsafe "impl" GenericParams "!" TraitRef "for" ".." "{" "}",
 };
-Maybeimpl_items: () = {
-  impl_items,
+
+MaybeImplItems: () = {
+  ImplItems,
   (),
 };
-impl_items: () = {
-  impl_item,
-  impl_item impl_items,
+
+ImplItems: () = {
+  ImplItem,
+  ImplItem ImplItems,
 };
-impl_item: () = {
-  impl_method,
+
+ImplItem: () = {
+  ImplMethod,
   AttrsAndVis ItemMacro,
-  impl_const,
-  impl_type,
+  ImplConst,
+  ImplType,
 };
-impl_const: () = {
+
+ImplConst: () = {
   AttrsAndVis ItemConst,
 };
-impl_type: () = {
+
+ImplType: () = {
   AttrsAndVis "type" Identifier GenericParams "=" TySum ";",
 };
+
 ItemFn: () = {
   "fn" Identifier GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
 };
+
 ItemUnsafeFn: () = {
   "unsafe" "fn" Identifier GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
   "unsafe" "extern" Abi "fn" Identifier GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
 };
+
 fn_decl: () = {
   fn_params RetTy,
 };
+
 fn_decl_with_self: () = {
   fn_params_with_self RetTy,
 };
+
 fn_decl_with_self_allow_AnonParams: () = {
   fn_AnonParams_with_self RetTy,
 };
+
 fn_params: () = {
-  "(" Maybeparams ")",
+  "(" Comma<param> ")",
 };
 fn_AnonParams: () = {
   "(" AnonParam AnonParams_allow_variadic_tail ")",
@@ -333,22 +350,13 @@ fn_params_with_self: () = {
   "(" "mut"? "self" MaybeTyAscription Maybecomma_params ")",
   "(" "&[]" "mut"? "self" MaybeTyAscription Maybecomma_params ")",
   "(" "&[]" Lifetime "mut"? "self" MaybeTyAscription Maybecomma_params ")",
-  "(" Maybeparams ")",
+  "(" Comma<param> ")",
 };
 fn_AnonParams_with_self: () = {
   "(" "mut"? "self" MaybeTyAscription Maybecomma_AnonParams ")",
   "(" "&[]" "mut"? "self" MaybeTyAscription Maybecomma_AnonParams ")",
   "(" "&[]" Lifetime "mut"? "self" MaybeTyAscription Maybecomma_AnonParams ")",
   "(" MaybeAnonParams ")",
-};
-Maybeparams: () = {
-  params,
-  params ",",
-  (),
-};
-params: () = {
-  param,
-  params "," param,
 };
 param: () = {
   Pat ":" TySum,
@@ -357,10 +365,8 @@ inferrable_param: () = {
   Pat MaybeTyAscription,
 };
 Maybecomma_params: () = {
-  ",",
-  "," params,
-  "," params ",",
-  (),
+    "," Comma<param>,
+    (),
 };
 Maybecomma_AnonParams: () = {
   ",",
@@ -1111,15 +1117,26 @@ Comma<E>: () =
 Delim<E,D>: () =
     (E D)* E?;
 
-// Comma-separated list of length at least 1.
+// Comma-separated list of length at least 1. Trailing comma accepted.
 #[inline]
 Comma1<E>: () =
     Delim1<E,",">;
 
-// Delimited list of length at least 1.
+// Comma-separated list of length at least 1. No trailing comma accepted.
+#[inline]
+Comma1NoTrail<E>: () =
+    Delim1NoTrail<E,",">;
+
+// Delimited list of length at least 1. Trailing delimeter accepted.
 #[inline]
 Delim1<E,D>: () = {
     (E D)+,
+    Delim1NoTrail<E, D>,
+};
+
+// Delimited list of length at least 1. No trailing delimeter accepted.
+#[inline]
+Delim1NoTrail<E,D>: () = {
     (E D)* E,
 };
 
