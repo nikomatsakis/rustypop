@@ -5,10 +5,9 @@ authors = ["Niko Matsakis <niko@alum.mit.edu>"]
 build = "build.rs" # LALRPOP preprocessing
 
 # Add a dependency on the LALRPOP runtime library:
-[dependencies.lalrpop-util]
-git = "https://github.com/nikomatsakis/lalrpop.git"
-branch = "workaround-3025"
+[dependencies]
+lalrpop-util = "0.12.4"
 
-[build-dependencies.lalrpop]
-git = "https://github.com/nikomatsakis/lalrpop.git"
-branch = "workaround-3025"
+[build-dependencies]
+lalrpop = "0.12.4"
+

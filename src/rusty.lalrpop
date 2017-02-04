@@ -21,19 +21,21 @@
 // to fix this I have to propagate the restrictions against type
 // arguments into the Ty grammar.
 
-grammar;
+use token::Token;
+
+grammar<'input>;
 
 pub Crate: () = {
   Shebang? InnerAttr* ModItem*,
 };
 
 Shebang: () = {
-    SHEBANG_LINE,
+    "#!",
 };
 
 InnerAttr: () = {
-    SHEBANG "[" MetaItem "]",
-    INNER_DOC_COMMENT,
+    "#!" "[" MetaItem "]",
+    "//!...",
 };
 
 MaybeOuterAttrs: () = {
@@ -47,13 +49,13 @@ OuterAttrs: () = {
 
 OuterAttr: () = {
     "#" "[" MetaItem "]",
-    OUTER_DOC_COMMENT,
+    "///...",
 };
 
 MetaItem: () = {
-    Ident,
-    Ident "=" Lit,
-    Ident "(" Comma<MetaItem> ")",
+    Identifier,
+    Identifier "=" Lit,
+    Identifier "(" Comma<MetaItem> ")",
 };
 
 AttrsAndVis: () = {
@@ -78,23 +80,23 @@ StmtItem: () = {
 };
 
 ItemStatic: () = {
-    "static" "mut"? Ident ":" ty "=" Expr ";",
+    "static" "mut"? Identifier ":" ty "=" Expr ";",
 };
 
 ItemConst: () = {
-    "const" Ident ":" ty "=" Expr ";",
+    "const" Identifier ":" ty "=" Expr ";",
 };
 
 ItemMacro: () = {
-    PathExpr "!" Ident? parens_delimited_token_trees ";",
-    PathExpr "!" Ident? braces_delimited_token_trees,
-    PathExpr "!" Ident? brackets_delimited_token_trees ";",
+    PathExpr "!" Identifier? parens_delimited_token_trees ";",
+    PathExpr "!" Identifier? braces_delimited_token_trees,
+    PathExpr "!" Identifier? brackets_delimited_token_trees ";",
 };
 
 ViewItem: () = {
     ItemUse,
     ExternFnItem,
-    "extern" "crate" Ident ("as" Ident)? ";",
+    "extern" "crate" Identifier ("as" Identifier)? ";",
 };
 
 ExternFnItem: () = {
@@ -109,15 +111,15 @@ ViewPath: () = {
     PathNoTypes,
     PathNoTypes "::" "{" "}",
     "::" "{" "}",
-    PathNoTypes "::" "{" IdentsOrSelf "}",
-    "::" "{" IdentsOrSelf "}",
-    PathNoTypes "::" "{" IdentsOrSelf "," "}",
-    "::" "{" IdentsOrSelf "," "}",
+    PathNoTypes "::" "{" IdentifiersOrSelf "}",
+    "::" "{" IdentifiersOrSelf "}",
+    PathNoTypes "::" "{" IdentifiersOrSelf "," "}",
+    "::" "{" IdentifiersOrSelf "," "}",
     PathNoTypes "::" "*",
     "{" "}",
-    "{" IdentsOrSelf "}",
-    "{" IdentsOrSelf "," "}",
-    PathNoTypes "as" Ident,
+    "{" IdentifiersOrSelf "}",
+    "{" IdentifiersOrSelf "," "}",
+    PathNoTypes "as" Identifier,
 };
 
 BlockItem: () = {
@@ -140,9 +142,9 @@ MaybeInitExpr: () = {
 };
 
 ItemStruct: () = {
-  "struct" Ident GenericParams MaybeWhereClause StructDeclArgs,
-  "struct" Ident GenericParams StructTupleArgs MaybeWhereClause ";",
-  "struct" Ident GenericParams MaybeWhereClause ";",
+  "struct" Identifier GenericParams MaybeWhereClause StructDeclArgs,
+  "struct" Identifier GenericParams StructTupleArgs MaybeWhereClause ";",
+  "struct" Identifier GenericParams MaybeWhereClause ";",
 };
 
 StructDeclArgs: () = {
@@ -158,7 +160,7 @@ StructDeclFields: () = {
 };
 
 StructDeclField: () = {
-  AttrsAndVis Ident ":" TySum,
+  AttrsAndVis Identifier ":" TySum,
 };
 
 StructTupleFields: () = {
@@ -170,11 +172,11 @@ StructTupleField: () = {
 };
 
 ItemEnum: () = {
-    "enum" Ident GenericParams MaybeWhereClause "{" Comma1<EnumDef> "}",
+    "enum" Identifier GenericParams MaybeWhereClause "{" Comma1<EnumDef> "}",
 };
 
 EnumDef: () = {
-    AttrsAndVis Ident EnumArgs
+    AttrsAndVis Identifier EnumArgs
 };
 
 EnumArgs: () = {
@@ -185,8 +187,8 @@ EnumArgs: () = {
 };
 
 ItemMod: () = {
-  "mod" Ident ";",
-  "mod" Ident "{" InnerAttr* ModItem* "}",
+  "mod" Identifier ";",
+  "mod" Identifier "{" InnerAttr* ModItem* "}",
 };
 
 ItemForeignMod: () = {
@@ -203,10 +205,10 @@ ForeignItem: () = {
   AttrsAndVis "unsafe" item_foreign_fn,
 };
 item_foreign_static: () = {
-  "mut"? Ident ":" ty ";",
+  "mut"? Identifier ":" ty ";",
 };
 item_foreign_fn: () = {
-  "fn" Ident GenericParams fn_decl_allow_variadic MaybeWhereClause ";",
+  "fn" Identifier GenericParams fn_decl_allow_variadic MaybeWhereClause ";",
 };
 fn_decl_allow_variadic: () = {
   fn_params_allow_variadic RetTy,
@@ -221,20 +223,20 @@ visibility: () = {
   "pub",
   (),
 };
-IdentsOrSelf: () = {
-  IdentOrSelf,
-  IdentOrSelf "as" Ident,
-  IdentsOrSelf "," IdentOrSelf,
+IdentifiersOrSelf: () = {
+  IdentifierOrSelf,
+  IdentifierOrSelf "as" Identifier,
+  IdentifiersOrSelf "," IdentifierOrSelf,
 };
-IdentOrSelf: () = {
-  Ident,
+IdentifierOrSelf: () = {
+  Identifier,
   "self",
 };
 ItemType: () = {
-  "type" Ident GenericParams MaybeWhereClause "=" TySum ";",
+  "type" Identifier GenericParams MaybeWhereClause "=" TySum ";",
 };
 ItemTrait: () = {
-    MaybeUnsafe "trait" Ident GenericParams MaybeTyParamBounds MaybeWhereClause
+    MaybeUnsafe "trait" Identifier GenericParams MaybeTyParamBounds MaybeWhereClause
         "{"
         TraitItem*
         "}",
@@ -247,7 +249,7 @@ TraitItem: () = {
 };
 
 TraitConst: () = {
-    MaybeOuterAttrs "const" Ident MaybeTyAscription MaybeConstDefault ";",
+    MaybeOuterAttrs "const" Identifier MaybeTyAscription MaybeConstDefault ";",
 };
 
 MaybeConstDefault: () = {
@@ -265,16 +267,16 @@ TraitMethod: () = {
   method,
 };
 type_method: () = {
-  AttrsAndVis MaybeUnsafe "fn" Ident GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause ";",
-  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause ";",
+  AttrsAndVis MaybeUnsafe "fn" Identifier GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause ";",
+  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Identifier GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause ";",
 };
 method: () = {
-  AttrsAndVis MaybeUnsafe "fn" Ident GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause InnerAttrs_and_block,
-  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause InnerAttrs_and_block,
+  AttrsAndVis MaybeUnsafe "fn" Identifier GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause InnerAttrs_and_block,
+  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Identifier GenericParams fn_decl_with_self_allow_AnonParams MaybeWhereClause InnerAttrs_and_block,
 };
 impl_method: () = {
-  AttrsAndVis MaybeUnsafe "fn" Ident GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
-  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Ident GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
+  AttrsAndVis MaybeUnsafe "fn" Identifier GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
+  AttrsAndVis MaybeUnsafe "extern" Abi "fn" Identifier GenericParams fn_decl_with_self MaybeWhereClause InnerAttrs_and_block,
 };
 item_impl: () = {
   MaybeUnsafe "impl" GenericParams TyPrimSum MaybeWhereClause "{" InnerAttr* Maybeimpl_items "}",
@@ -302,14 +304,14 @@ impl_const: () = {
   AttrsAndVis ItemConst,
 };
 impl_type: () = {
-  AttrsAndVis "type" Ident GenericParams "=" TySum ";",
+  AttrsAndVis "type" Identifier GenericParams "=" TySum ";",
 };
 ItemFn: () = {
-  "fn" Ident GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
+  "fn" Identifier GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
 };
 ItemUnsafeFn: () = {
-  "unsafe" "fn" Ident GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
-  "unsafe" "extern" Abi "fn" Ident GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
+  "unsafe" "fn" Identifier GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
+  "unsafe" "extern" Abi "fn" Identifier GenericParams fn_decl MaybeWhereClause InnerAttrs_and_block,
 };
 fn_decl: () = {
   fn_params RetTy,
@@ -386,11 +388,11 @@ AnonParams_allow_variadic_tail: () = {
 };
 
 NamedArg: () = {
-  Ident,
+  Identifier,
   "_",
-  "&[]" Ident,
+  "&[]" Identifier,
   "&[]" "_",
-  "mut" Ident,
+  "mut" Identifier,
 };
 
 RetTy: () = {
@@ -420,17 +422,17 @@ ForLifetimes: () = {
 };
 
 PathNoTypes: () = {
-  Ident,
-  "::" Ident,
+  Identifier,
+  "::" Identifier,
   "self",
   "::" "self",
-  PathNoTypes "::" Ident,
+  PathNoTypes "::" Identifier,
 };
 GenericArgs: () = {
   TyLt GenericValues TyGt,
 };
 GenericValues: () = {
-  MaybeLifetimes MaybeTySumsAndOrBindings,
+    Lifetimes? MaybeTySumsAndOrBindings,
 };
 MaybeTySumsAndOrBindings: () = {
   TySums,
@@ -459,12 +461,12 @@ PatWithBindingMode<BM>: () = {
     PathExpr "{" PatStruct "}",
     PathExpr "(" ".." ")",
     PathExpr "(" Comma<Pat> ")",
-    PathExpr "!" Ident? delimited_token_trees,
-    BM Ident,
-    Ident "@" Pat,
-    BM Ident "@" Pat,
+    PathExpr "!" Identifier? delimited_token_trees,
+    BM Identifier,
+    Identifier "@" Pat,
+    BM Identifier "@" Pat,
     "box" Pat,
-    TyLt TySum MaybeAsTraitRef TyGt "::" Ident,
+    TyLt TySum MaybeAsTraitRef TyGt "::" Identifier,
 };
 pats_or: () = {
   Pat,
@@ -484,12 +486,12 @@ LitOrPath: () = {
   "-" Lit,
 };
 PatField: () = {
-  Ident,
-  BindingMode Ident,
-  "box" Ident,
-  "box" BindingMode Ident,
-  Ident ":" Pat,
-  BindingMode Ident ":" Pat,
+  Identifier,
+  BindingMode Identifier,
+  "box" Identifier,
+  "box" BindingMode Identifier,
+  Identifier ":" Pat,
+  BindingMode Identifier ":" Pat,
 };
 PatFields: () = {
   PatField,
@@ -521,7 +523,7 @@ PatVec_elts: () = {
 };
 ty: () = {
   TyPrim,
-  TyLt TySum MaybeAsTraitRef TyGt "::" Ident,
+  TyLt TySum MaybeAsTraitRef TyGt "::" Identifier,
   "(" TySums ")",
   "(" TySums "," ")",
   "(" ")",
@@ -566,8 +568,8 @@ ty_qualified_path_and_GenericValues: () = {
   ty_qualified_path "," TySums Maybebindings,
 };
 ty_qualified_path: () = {
-  TySum "as" TraitRef TyGt "::" Ident,
-  TySum "as" TraitRef TyGt "::" Ident "+" TyParamBounds,
+  TySum "as" TraitRef TyGt "::" Identifier,
+  TySum "as" TraitRef TyGt "::" Identifier "+" TyParamBounds,
 };
 MaybeTySums: () = {
   TySums,
@@ -607,11 +609,11 @@ bindings: () = {
   bindings "," binding,
 };
 binding: () = {
-  Ident "=" ty,
+  Identifier "=" ty,
 };
 TyParam: () = {
-  Ident MaybeTyParamBounds MaybeTyDefault,
-  Ident "?" Ident MaybeTyParamBounds MaybeTyDefault,
+  Identifier MaybeTyParamBounds MaybeTyDefault,
+  Identifier "?" Identifier MaybeTyParamBounds MaybeTyDefault,
 };
 Maybebounds: () = {
   ":" bounds,
@@ -638,12 +640,7 @@ MaybeTyDefault: () = {
 MaybeLifetimes: () = Comma<LifetimeAndBounds>;
 Lifetimes: () = Comma1<LifetimeAndBounds>;
 LifetimeAndBounds: () = {
-  LIFETIME MaybeLifetimeBounds,
-  "'static",
-};
-Lifetime: () = {
-  LIFETIME,
-  "'static",
+  Lifetime MaybeLifetimeBounds,
 };
 TraitRef: () = {
   Path<Epsilon>,
@@ -683,17 +680,17 @@ PathExpr: () = {
 // Parses a path like `x::y::z`, where A is the token that separates
 // the generic arguments.
 Path<ARG_SEP>: () = {
-    Ident,
-    "::" Ident,
-    "self" "::" Ident,
-    "super" "::" Ident,
-    Path<ARG_SEP> "::" Ident,
+    Identifier,
+    "::" Identifier,
+    "self" "::" Identifier,
+    "super" "::" Identifier,
+    Path<ARG_SEP> "::" Identifier,
     Path<ARG_SEP> ARG_SEP GenericArgs,
 };
 
 MacroExpr: () = {
-  PathExpr "!" Ident? parens_delimited_token_trees,
-  PathExpr "!" Ident? brackets_delimited_token_trees,
+  PathExpr "!" Identifier? parens_delimited_token_trees,
+  PathExpr "!" Identifier? brackets_delimited_token_trees,
 };
 
 // New-style names:
@@ -818,7 +815,7 @@ ExprPrefix<S,B,L>: () = {
 ExprSuffix<S,B,L>: () = {
     ExprAtom<S,B,L>,
     ExprSuffix<S,B,L> "." Path<"::">,
-    ExprSuffix<S,B,L> "." LIT_INTEGER,
+    ExprSuffix<S,B,L> "." LiteralInteger,
     ExprSuffix<S,B,L> "[" Expr "]",
     ExprSuffix<S,B,L> "(" Comma<Expr> ")",
 };
@@ -833,16 +830,16 @@ ExprAtom<S,B,L>: () = {
     "[" Comma<Expr> "]",
     "[" Expr ";" Expr "]",
     "continue" if S != "", // FIXME#1
-    "continue" Ident if S != "", // FIXME#1
+    "continue" Identifier if S != "", // FIXME#1
     "break" if S != "", // FIXME#1
-    "break" Ident if S != "", // FIXME#1
+    "break" Identifier if S != "", // FIXME#1
     Expr_qualified_path,
     ExprStmtLike if L != "",
     block if B != "",
 };
 
 Expr_qualified_path: () = {
-  TyLt TySum MaybeAsTraitRef TyGt "::" Ident Maybeqpath_params,
+  TyLt TySum MaybeAsTraitRef TyGt "::" Identifier Maybeqpath_params,
 };
 
 Maybeqpath_params: () = {
@@ -874,7 +871,7 @@ FieldValues: () = {
 };
 
 FieldValue: () = {
-    Ident ":" Expr,
+    Identifier ":" Expr,
 };
 
 ExprStmtLike: () = {
@@ -886,14 +883,14 @@ ExprStmtLike: () = {
   ExprLoop,
   ExprFor,
   "unsafe" block,
-  PathExpr "!" Ident? braces_delimited_token_trees,
+  PathExpr "!" Identifier? braces_delimited_token_trees,
 };
 ExprStmtLikeSuffix: () = {
   ExprStmtLike,
   ExprStmtLikeSuffix "." Path<"::">,
   ExprStmtLikeSuffix "." Path<"::"> "[" Expr? "]",
   ExprStmtLikeSuffix "." Path<"::"> "(" Comma<Expr> ")",
-  ExprStmtLikeSuffix "." LIT_INTEGER,
+  ExprStmtLikeSuffix "." LiteralInteger,
 };
 ExprMatch: () = {
   "match" ExprNoStruct "{" "}",
@@ -961,25 +958,22 @@ Let: () = {
 };
 
 Lit: () = {
-    LIT_BYTE,
-    LIT_CHAR,
-    LIT_INTEGER,
-    LIT_FLOAT,
+    LiteralByte,
+    LiteralChar,
+    LiteralInteger,
+    LiteralFloat,
     "true",
     "false",
     StringLiteral,
 };
 
 StringLiteral: () = {
-  LIT_STR,
-  LIT_STR_RAW,
-  LIT_BYTE_STR,
-  LIT_BYTE_STR_RAW,
+  LiteralString,
+  LiteralStringRaw,
+  LiteralByteString,
+  LiteralByteStringRaw,
 };
 
-Ident: () = {
-  IDENT,
-};
 unpaired_token: () = {
   "==",
   "!=",
@@ -995,17 +989,17 @@ unpaired_token: () = {
   "...",
   "::",
   "->",
-  LIT_BYTE,
-  LIT_CHAR,
-  LIT_INTEGER,
-  LIT_FLOAT,
-  LIT_STR,
-  LIT_STR_RAW,
-  LIT_BYTE_STR,
-  LIT_BYTE_STR_RAW,
-  IDENT,
+  LiteralByte,
+  LiteralChar,
+  LiteralInteger,
+  LiteralFloat,
+  LiteralString,
+  LiteralStringRaw,
+  LiteralByteString,
+  LiteralByteStringRaw,
+  Identifier,
   "_",
-  LIFETIME,
+  Lifetime,
   "self",
   "super",
   "static",
@@ -1043,10 +1037,9 @@ unpaired_token: () = {
   "const",
   "where",
   "typeof",
-  INNER_DOC_COMMENT,
-  OUTER_DOC_COMMENT,
-  SHEBANG,
-  "'static",
+  "//!...",
+  "///...",
+  "#!",
   ";",
   ",",
   ".",
@@ -1101,9 +1094,9 @@ brackets_delimited_token_trees: () = {
   "[" token_trees "]",
 };
 
-MaybeIdent: () = {
+MaybeIdentifier: () = {
   (),
-  Ident,
+  Identifier,
 };
 
 // Comma-separated list with optional trailing comma.  Potentially
@@ -1164,118 +1157,112 @@ Epsilon: () = {
 };
 
 extern {
-    enum &'input str {
-        "!" => Token0,
-        "#" => Token1,
-        "$" => Token2,
-        "%" => Token3,
-        "(" => Token5,
-        ")" => Token6,
-        "*" => Token7,
-        "+" => Token8,
-        "," => Token9,
-        "-" => Token10,
-        "." => Token11,
-        "/" => Token12,
-        ":" => Token13,
-        ";" => Token14,
-        "=" => Token16,
-        "?" => Token18,
-        "@" => Token19,
-        "[" => Token20,
-        "]" => Token21,
-        "^" => Token22,
-        "{" => Token23,
-        "}" => Token25,
-        "~" => Token26,
-        "==" => Token30,
-        "!=" => Token31,
-        "-=" => Token37,
-        "&=" => Token38,
-        "|=" => Token39,
-        "+=" => Token40,
-        "*=" => Token41,
-        "/=" => Token42,
-        "^=" => Token43,
-        "%=" => Token44,
-        ".." => Token45,
-        "..." => Token46,
-        "::" => Token47,
-        "->" => Token48,
-        "=>" => Token48b,
+    enum Token {
+        "!" => Token::Bang,
+        "#" => Token::Pound,
+        "$" => Token::Dollar,
+        "%" => Token::Percent,
+        "(" => Token::ParenOpen,
+        ")" => Token::ParenClose,
+        "*" => Token::Star,
+        "+" => Token::Plus,
+        "," => Token::Comma,
+        "-" => Token::Dash,
+        "." => Token::Dot,
+        "/" => Token::Slash,
+        ":" => Token::Colon,
+        ";" => Token::Semi,
+        "=" => Token::Equals,
+        "?" => Token::QuestionMark,
+        "@" => Token::At,
+        "[" => Token::SquareBracketOpen,
+        "]" => Token::SquareBracketClose,
+        "^" => Token::Hat,
+        "{" => Token::CurlyBraceOpen,
+        "}" => Token::CurlyBraceClose,
+        "~" => Token::Twiddle,
+        "==" => Token::EqualsEquals,
+        "!=" => Token::BangEquals,
+        "-=" => Token::DashEquals,
+        "&=" => Token::AmpersandEquals,
+        "|=" => Token::PipeEquals,
+        "+=" => Token::PlusEquals,
+        "*=" => Token::StarEquals,
+        "/=" => Token::SlashEquals,
+        "^=" => Token::HatEquals,
+        "%=" => Token::PercentEquals,
+        ".." => Token::DotDot,
+        "..." => Token::DotDotDot,
+        "::" => Token::ColonColon,
+        "->" => Token::ThinArrow,
+        "=>" => Token::FatArrow,
+        "<<=" => Token::LessLessEqual,
+        ">>=" => Token::RightRightEqual,
+        "<-" => Token::LeftThinArrow,
+        "<=" => Token::LessEqual,
+        ">=" => Token::RightEqual,
+        "_" => Token::Underscore,
+        "|[|]" => Token::PipeFollowedByPipe,
+        "|[]" => Token::PipeFollowedByOther,
+        "&[&]" => Token::AmpersandFollowedByAmpersand,
+        "&[]" => Token::AmpersandFollowedByOther,
+        "<[<]" => Token::LessFollowedByLess,
+        "<[]" => Token::LessFollowedByOther,
+        ">[>]" => Token::GreaterFollowedByGreater,
+        ">[]" => Token::GreaterFollowedByOther,
 
-        "<<=" => Token15,
-        ">>=" => Token15,
-        "<-" => Token15,
-        "<=" => Token15,
-        ">=" => Token15,
+        "self" => Token::KeywordSelf,
+        "super" => Token::KeywordSuper,
+        "static" => Token::KeywordStatic,
+        "as" => Token::KeywordAs,
+        "break" => Token::KeywordBreak,
+        "crate" => Token::KeywordCrate,
+        "else" => Token::KeywordElse,
+        "enum" => Token::KeywordEnum,
+        "extern" => Token::KeywordExtern,
+        "false" => Token::KeywordFalse,
+        "fn" => Token::KeywordFn,
+        "for" => Token::KeywordFor,
+        "if" => Token::KeywordIf,
+        "impl" => Token::KeywordImpl,
+        "in" => Token::KeywordIn,
+        "let" => Token::KeywordLet,
+        "loop" => Token::KeywordLoop,
+        "match" => Token::KeywordMatch,
+        "mod" => Token::KeywordMod,
+        "move" => Token::KeywordMove,
+        "mut" => Token::KeywordMut,
+        "priv" => Token::KeywordPriv,
+        "pub" => Token::KeywordPub,
+        "ref" => Token::KeywordRef,
+        "return" => Token::KeywordReturn,
+        "struct" => Token::KeywordStruct,
+        "true" => Token::KeywordTrue,
+        "trait" => Token::KeywordTrait,
+        "type" => Token::KeywordType,
+        "unsafe" => Token::KeywordUnsafe,
+        "use" => Token::KeywordUse,
+        "while" => Token::KeywordWhile,
+        "continue" => Token::KeywordContinue,
+        "box" => Token::KeywordBox,
+        "const" => Token::KeywordConst,
+        "where" => Token::KeywordWhere,
+        "typeof" => Token::KeywordTypeof,
 
-        // Compute tokens. The notation `x[y]` means "an x adjacent to
-        // a y" and the notation `x[]` means "an x adjacent to nothing
-        // of interest". So if we see `<<`, we will produce two
-        // tokens: `<[<] <[]`, but if we see `<<=`, we would produce
-        // three tokens: `<[<=] <[=] =`.
-        "|[|]" => Token24a,  // "|" followed immediately by another "|"
-        "|[]" => Token24b,  // "|" followed by non-pipe
-        "&[&]" => Token24c,  // as above
-        "&[]" => Token24d,
-        "<[<]" => Token15,
-        "<[]" => Token15,
-        ">[>]" => Token15,
-        ">[]" => Token15,
+        LiteralByte => Token::LiteralByte,
+        LiteralChar => Token::LiteralChar,
+        LiteralInteger => Token::LiteralInteger,
+        LiteralFloat => Token::LiteralFloat,
+        LiteralString => Token::LiteralString,
+        LiteralStringRaw => Token::LiteralStringRaw,
+        LiteralByteString => Token::LiteralByteString,
+        LiteralByteStringRaw => Token::LiteralByteStringRaw,
+        Identifier => Token::Identifier,
+        Lifetime => Token::Lifetime,
 
-        LIT_BYTE => Token51,
-        LIT_CHAR => Token52,
-        LIT_INTEGER => Token53,
-        LIT_FLOAT => Token54,
-        LIT_STR => Token55,
-        LIT_STR_RAW => Token56,
-        LIT_BYTE_STR => Token57,
-        LIT_BYTE_STR_RAW => Token58,
-        IDENT => Token59,
-        "_" => Token60,
-        LIFETIME => Token61,
-        "self" => Token62,
-        "super" => Token62,
-        "static" => Token63,
-        "as" => Token64,
-        "break" => Token65,
-        "crate" => Token66,
-        "else" => Token67,
-        "enum" => Token68,
-        "extern" => Token69,
-        "false" => Token70,
-        "fn" => Token71,
-        "for" => Token72,
-        "if" => Token73,
-        "impl" => Token74,
-        "in" => Token75,
-        "let" => Token76,
-        "loop" => Token77,
-        "match" => Token78,
-        "mod" => Token79,
-        "move" => Token80,
-        "mut" => Token81,
-        "priv" => Token82,
-        "pub" => Token83,
-        "ref" => Token84,
-        "return" => Token85,
-        "struct" => Token86,
-        "true" => Token87,
-        "trait" => Token88,
-        "type" => Token89,
-        "unsafe" => Token90,
-        "use" => Token91,
-        "while" => Token92,
-        "continue" => Token93,
-        "box" => Token95,
-        "const" => Token96,
-        "where" => Token97,
-        "typeof" => Token98,
-        INNER_DOC_COMMENT => Token99,
-        OUTER_DOC_COMMENT => Token100,
-        SHEBANG => Token101,
-        SHEBANG_LINE => Token102,
-        "'static" => Token103,
+        "//!..." => Token::InnerDocComment,
+        "///..." => Token::OuterDocComment,
+        "#!" => Token::Shebang,
+        "#!..." => Token::ShebangLine,
     }
 }
